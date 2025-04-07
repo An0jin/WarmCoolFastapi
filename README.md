@@ -14,20 +14,20 @@
 
         ↑ 퍼스널 컬러 제공
 
-[ Unity (시작점)]
+[ Unity (시작점)](https://github.com/anyoungjin20040106/WarmCoolunity)
   - 사용자 얼굴 이미지 촬영
   - 분석 결과 기반 AR 메이크업 적용 (ARFoundation)
   - ➕ 결과 기반으로 Photon Chat 연결
 
 이미지 전송   ⇅결과 수신
 
-[ FastAPI 서버 ]
+[ FastAPI 서버 ](https://github.com/anyoungjin20040106/WarmCoolfastapi)
   - YOLOv11-CLS 모델 호출
   - Unity에서 이미지 수신 → 추론 → 결과 응답
 
 이미지 전송   ⇅결과 수신
 
-[ YOLOv11-CLS 모델 (Ultralytics) ](https://docs.ultralytics.com/ko/tasks/classify/)
+[ YOLOv11-CLS 모델 (Ultralytics) ](https://github.com/anyoungjin20040106/WarmCoolYolo)
   - 학습된 weight로 이미지 분류
   - 퍼스널 컬러 결과 반환
 
