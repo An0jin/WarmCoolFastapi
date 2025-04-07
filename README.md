@@ -1,11 +1,10 @@
-
 # ⚡ FastAPI 기반 퍼스널 컬러 분석 서버
 
 ## 📌 개요
 
 이 리포지토리는 **YOLOv11-CLS 모델을 FastAPI로 서빙**하여, Unity 애플리케이션과 통신하는 퍼스널 컬러 분석 백엔드 서버입니다. 사용자의 얼굴 이미지를 전달받아 퍼스널 컬러(예: 웜톤, 쿨톤 등)를 추론하고, 그 결과를 반환합니다.
 
-------
+---
 
 ## 🏗 시스템 구성 요소 관계 흐름
 
@@ -37,6 +36,7 @@
 [ Roboflow & github]
   - YOLOv11-CLS 학습용 데이터셋 제공=
 ```
+
 ---
 
 ## 🧩 시스템 내 역할
@@ -52,16 +52,17 @@
 ## 🚀 실행 방법
 
 1. 의존성 설치:
-   ```bash
-   pip install fastapi uvicorn ultralytics python-multipart
-   ```
 
+   ```bash
+   pip install -r requirements.txt
+   ```
 2. 서버 실행:
+
    ```bash
    uvicorn main:app --reload
    ```
-
 3. 테스트:
+
    - Unity 또는 Postman으로 이미지 전송 (`POST /predict`)
    - 응답 예시:
      ```json
@@ -73,7 +74,9 @@
 ---
 
 ## 📡 FastAPI 퍼스널 컬러 분석 API 명세
+
 ### predict
+
 #### 📍 POST `/predict/`
 
 - **설명**: 업로드된 이미지를 YOLOv8-CLS 모델로 분석하여 퍼스널 컬러(예: 웜톤, 쿨톤)를 분류합니다.
@@ -128,5 +131,5 @@
 
 ## 📬 연락 및 기여
 
-기여는 언제든 환영합니다!  
+기여는 언제든 환영합니다!
 Issue 또는 PR을 통해 함께 발전시켜 주세요.
