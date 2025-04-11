@@ -6,38 +6,38 @@
 
 ---
 
-## 🏗 시스템 구성 요소 관계 흐름
 
-```
-[ photon chat ]
-  -같은 퍼스널 컬러인 사람들 끼리 커뮤니티를 할수 있는 공간 구현
 
-        ↑ 퍼스널 컬러 제공
+## 🏗 시스템 구성
+프로젝트는 다음 다섯 개의 주요 리포지토리로 구성되어 있습니다:
 
-[ Unity (시작점)](https://github.com/anyoungjin20040106/WarmCoolunity)
-  - 사용자 얼굴 이미지 촬영
-  - 분석 결과 기반 AR 메이크업 적용 (ARFoundation)
-  - ➕ 결과 기반으로 Photon Chat 연결
+### 1. [WarmCoolYolo](https://github.com/anyoungjin20040106/WarmCoolYolo)
+- YOLOv11-CLS 기반 퍼스널 컬러 분류 모델
+- Roboflow를 통한 데이터셋 관리
+- 모델 학습 및 평가 파이프라인
 
-이미지 전송   ⇅결과 수신
+### 2. [WarmCoolFastapi](https://github.com/anyoungjin20040106/WarmCoolFastapi)
+- FastAPI 기반 백엔드 서버
+- YOLOv11-CLS 모델 서빙
+- RESTful API 엔드포인트 제공
+- MySQL 데이터베이스 연동
 
-[ FastAPI 서버 ](https://github.com/anyoungjin20040106/WarmCoolfastapi)
-  - YOLOv11-CLS 모델 호출
-  - Unity에서 이미지 수신 → 추론 → 결과 응답
+### 3. [WarmCoolUnity](https://github.com/anyoungjin20040106/WarmCoolUnity)
+- Unity 기반 AR 애플리케이션
+- ARFoundation을 통한 얼굴 인식
+- 가상 메이크업 적용
+- Photon 기반 실시간 채팅
 
-이미지 전송   ⇅결과 수신
+### 4. [WarmCoolSQL](https://github.com/anyoungjin20040106/WarmCoolSQL)
+- 채팅 정보 관리
+- 유저 정보 관리
+- 퍼스널 컬러 해설
 
-[ YOLOv11-CLS 모델 (Ultralytics) ](https://github.com/anyoungjin20040106/WarmCoolYolo)
-  - 학습된 weight로 이미지 분류
-  - 퍼스널 컬러 결과 반환
+### 5. [WarmCoolDataset](https://github.com/anyoungjin20040106/WarmCoolDataset)
+- roboflow를 활용한 데이터 수집
+- github를 활용한 데이터 수집
+- 데이터 전처리
 
-        ↑ 데이터 제공
-
-[ Roboflow & github]
-  - YOLOv11-CLS 학습용 데이터셋 제공=
-```
-
----
 
 ## 🧩 시스템 내 역할
 

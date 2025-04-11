@@ -14,7 +14,7 @@ predict = APIRouter(tags=['predict'], prefix='/predict')  # 퍼스널 컬러 예
 chat = APIRouter(tags=['chat'], prefix='/chat')            # 채팅 기능 관련
 user = APIRouter(tags=['user'], prefix='/user')            # 사용자 정보 관련
 
-# 학습된 YOLOv8-CLS 모델 로드
+# 학습된 YOLOv11-CLS 모델 로드
 model = YOLO('best.pt')
 
 # ====================[ 예측 기능 ]====================
