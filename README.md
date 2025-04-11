@@ -38,41 +38,6 @@
 - github를 활용한 데이터 수집
 - 데이터 전처리
 
-
-## 🧩 시스템 내 역할
-
-본 FastAPI 서버는 전체 시스템에서 다음과 같은 역할을 수행합니다:
-
-- Unity로부터 얼굴 이미지를 수신
-- YOLOv11-CLS 모델을 통해 퍼스널 컬러 분석 수행
-- 추론 결과(JSON)를 Unity로 반환
-
----
-
-## 🚀 실행 방법
-
-1. 의존성 설치:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. 서버 실행:
-
-   ```bash
-   uvicorn main:app --reload
-   ```
-3. 테스트:
-
-   - Unity 또는 Postman으로 이미지 전송 (`POST /predict`)
-   - 응답 예시:
-     ```json
-     {
-       "result": "봄 웜톤",
-     }
-     ```
-
----
-
 ## 📡 FastAPI 퍼스널 컬러 분석 API 명세
 
 ### predict
@@ -120,16 +85,18 @@
 
 ---
 
-## 🧠 기술 스택
 
-- **FastAPI** – 경량화된 Python 웹 서버
-- **Ultralytics YOLOv8 (CLS)** – 퍼스널 컬러 분류 모델
-- **Roboflow** – 학습용 데이터셋 관리
-- **Uvicorn** – ASGI 서버 실행
+## 🛠 사용 기술
+
+- FastAPI
+- pymysql(추가 예정)
 
 ---
 
-## 📬 연락 및 기여
 
-기여는 언제든 환영합니다!
-Issue 또는 PR을 통해 함께 발전시켜 주세요.
+## 💻 기술 스택
+- **AI/ML**: YOLOv11-CLS, Ultralytics
+- **백엔드**: FastAPI, MySQL
+- **프론트엔드**: Unity, ARFoundation
+- **네트워킹**: Photon PUN2
+- **데이터**: Roboflow
