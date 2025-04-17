@@ -36,7 +36,7 @@
 ### 5. [WarmCoolDataset](https://github.com/anyoungjin20040106/WarmCoolDataset)
 - roboflow를 활용한 데이터 수집
 - github를 활용한 데이터 수집
-- 데이터 전처리
+- 데이터 라벨링
 
 ## 📡 FastAPI 퍼스널 컬러 분석 API 명세
 
