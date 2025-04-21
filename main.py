@@ -3,63 +3,134 @@ from fastapi.responses import JSONResponse
 from PIL import Image
 from io import BytesIO
 from ultralytics import YOLO
+from model import Chat,User,Login
+import pandas as pd
+from db_response import *
+import psycopg2.errors as errors
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
     # docs_url=None,  # 주석 해제 시 Swagger 문서 비활성화
 )
 
+
+
 # 라우터 정의 (기능별 분리)
 predict = APIRouter(tags=['predict'], prefix='/predict')  # 퍼스널 컬러 예측 관련
 chat = APIRouter(tags=['chat'], prefix='/chat')            # 채팅 기능 관련
 user = APIRouter(tags=['user'], prefix='/user')            # 사용자 정보 관련
+login = APIRouter(tags=['login'], prefix='/login')  # 로그인 관련
+
 
 # 학습된 YOLOv11-CLS 모델 로드
 model = YOLO('best.pt')
+
+# ====================[ 로그인 기능 ]====================
+
+# 얼굴 이미지 업로드 → 퍼스널 컬러 예측
+@login.post('/')
+async def predict_image(login:Login=Form(...)):
+    with connect() as conn:
+        df=pd.read_sql('select * from "user" where user_id=%s and pw=%s',(login.user_id,hash(login.pw)))
+        df['msg']="로그인 완료"if len(df)==1 else "아이디나 비밀번호를 확인해주세요"
+        return df.to_json(orient="records")[0]
 
 # ====================[ 예측 기능 ]====================
 
 # 얼굴 이미지 업로드 → 퍼스널 컬러 예측
 @predict.post('/')
-async def predict_image(img: UploadFile):
+async def predict_image(img: UploadFile,id:str=Form(...)):
     img_byte = await img.read()
     img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
     result = model.predict(img_pil)[0].probs.top1
-    return {"result":model.names[result]}
+    with connect() as conn:
+        cursor=conn.cursor()
+        cursor.execute('update "user" set color_id=%s where user_id=%s',(result,id))
+        conn.commit()
+    return to_response(model.names[result])
 
 # ====================[ 채팅 기능 ]====================
 
 # 특정 퍼스널 컬러 그룹의 채팅 내용 불러오기
 @chat.get("/{color}")
 def get_chat(color: str):
-    return {"result":"채팅 내용을 가져오는 앤드포인트"}
+    with connect() as conn:
+        df=pd.read_sql('''
+        select chat.chat_id, "user".name , chat.msg from "user"
+                        inner join chat ON "user".user_id=chat.user_id where "user".color_id=%s
+                    order by chat.time
+    ''',conn,params=[color,])
+    return to_response(df)
 
 # 채팅 메시지 추가
 @chat.post("/")
-def post_chat():
-    return {"result":"채팅 내용을 추가하는 앤드포인트"}
+def post_chat(chat:Chat):
+    with connect() as conn:
+        cursor=conn.cursor()
+        cursor.execute("insert into chat(user_id,msg) values(%s,%s)",(chat.user_id,chat.msg))
+    return 
 
 # ====================[ 사용자 기능 ]====================
+# 모든 사용자 정보 조회
+@user.get("/")
+def get_user():
+    with connect() as conn:
+        df=pd.read_sql('''
+        select * from "user"
+    ''',conn)
+    return to_response(df.to_dict(orient="records"))
 
 # 사용자 정보 조회
 @user.get("/{id}")
-def get_user(id: int):
-    return {"result":"해당 유저 정보를 가져오는 앤드포인트"}
+def get_user(id: str):
+    print(id)
+    with connect() as conn:
+        df=pd.read_sql('select * from "user" where "user".user_id=%s',conn,params=[id,])
+    return df.to_dict(orient="records")[0]
 
 # 사용자 정보 추가
 @user.post("/")
-def post_user():
-    return {"result":"유저 정보를 추가하는 앤드포인트"}
+def post_user(user:User=Form(None)):
+    with connect() as conn:
+        cursor=conn.cursor()
+        try:
+            var=user.user_id,hash(user.pw),user.name,user.birthday.user.gender
+            cursor.execute('insert into "user"(user_id,pw,name,birthday,gender) values (%s,%s,%s,%s,%s)',var)
+        except errors.UniqueViolation:
+            return to_response("이미 존재하는 아이디 입니다")
+        except errors.CheckViolation:
+            return to_response("남자 여자 라고만 입력해주세요")
+        except Exception as e:
+            return to_response(f"개발자가 {e}을 실수했어요")
+        return to_response("가입 완료")
 
 # 사용자 정보 수정
-@user.put("/{id}")
-def put_user(id: int):
-    return {"result":"유저 정보를 수정하는 앤드포인트"}
+@user.put("/")
+def put_user(user:User):
+    with connect()as conn:
+        cursor=conn.cursor()
+        try:
+            cursor.execute('update "user" set pw=%s, name=%s, birthday=%s,gender=%s where user_id=%s',(user.pw,user.name,user.birthday,user.gender,user.user_id))
+            conn.commit()
+            to_response("수정 완료")
+        except: 
+            to_response("에러")
+
 
 # 사용자 정보 삭제
 @user.delete("/{id}")
-def delete_user(id: int):
-    return {"result":"유저 정보를 삭제하는 앤드포인트"}
+def delete_user(id: str):
+    with connect()as conn:
+        cursor=conn.cursor()
+        try:
+            cursor.execute('delete  from chat where user_id=%s;',(id,))
+            cursor.execute('delete  from "user where user_id=%s;',(id,))
+            conn.commit()
+            result="삭제 완료" if cursor.rowcount>0 else "존재하지 않는 아이디"
+            to_response(result)
+        except : 
+            to_response("에러")
+
 
 # ====================[ 예외 처리 ]====================
 
