@@ -132,7 +132,7 @@
 ## 🛠 사용 기술
 
 - ![FastAPI](https://img.shields.io/badge/-FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
-- psycopg(추가 예정)
+- ![psycopg](https://img.shields.io/badge/-psycopg-4169E1?style=flat&logo=postgresql&logoColor=white)
 
 ---
 
