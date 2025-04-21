@@ -40,48 +40,91 @@
 
 ## 📡 FastAPI 퍼스널 컬러 분석 API 명세
 
-### predict
-
-#### 📍 POST `/predict/`
-
-- **설명**: 업로드된 이미지를 YOLOv8-CLS 모델로 분석하여 퍼스널 컬러(예: 웜톤, 쿨톤)를 분류합니다.
-- **요청 방식**: `multipart/form-data`
-- **요청 필드**:
-  - `img`: 사용자 얼굴 이미지 파일 (예: JPG, PNG 등)
-
----
-
-### chat (구현 예정)
+### chat
 
 #### 📍 GET `/chat/{color}`
 
 - **설명**: DB에 있는 해당 퍼스널 컬러의 채팅 내용을 가져옵니다
+- **요청 방식**: `query parameter`
+- **요청 필드**
+  - `color` : 퍼스널 컬러
 
 #### 📍 POST `/chat/`
 
 - **설명**: DB에 채팅 내용을 업로드 합니다
-- **요청 방식**: `multipart/form-data`
+- **요청 방식**: `application/x-www-form-urlencoded`
+- **요청 필드**
+  - `user_id` : 유저의 아이디
+  - `msg` : 메세지
 
 ---
 
-### user (구현 예정)
+### user
 
 #### 📍 GET `/user/{id}`
 
 - **설명**: DB에 있는 해당 아이디의 유저 정보를 가져옵니다
+- **요청 방식**: `query parameter`
+- **요청 필드**
+  - `id` : 유저의 아이디
+
 
 #### 📍 POST `/user/`
 
 - **설명**: DB에 유저를 추가 합니다
-- **요청 방식**: `multipart/form-data`
+- **요청 방식**: `application/x-www-form-urlencoded`
+- **요청 필드**
+  - `user_id` : 유저의 아이디
+  - `pw` : 비밀번호
+  - `name` : 유저명
+  - `birthday` : 생년월일
+  - `gender` : 성별
 
 #### 📍 PUT `/user/{id}`
 
 - **설명**: DB에 해당 아이디의 유저 정보를 수정합니다
+- **요청 방식**: `application/json`
+- **요청 필드**
+  - `user_id` : 유저의 아이디
+  - `pw` : 비밀번호
+  - `name` : 유저명
+  - `birthday` : 생년월일
+  - `gender` : 성별
+
 
 #### 📍 DELETE `/user/{id}`
 
 - **설명**: DB에 해당 아이디의 유저를 삭제 합니다
+- **요청 방식**: `query parameter`
+- **요청 필드**
+  - `id` : 유저의 아이디
+
+---
+
+### 그 외
+
+#### 📍 POST `/predict/`
+
+- **설명**: 업로드된 이미지를 YOLOv8-CLS 모델로 분석하여 퍼스널 컬러(예: 웜톤, 쿨톤)를 분류하고 "user".color_id를 수정합니다.
+- **요청 방식**: `multipart/form-data`
+- **요청 필드**
+  - `img`: 사용자 얼굴 이미지 파일 (예: JPG, PNG 등)
+  - `id` : 유저의 아이디
+
+#### 📍 POST `/login/`
+
+- **설명**: 유저의 아이디와 비밀번호를 받아 로그인 요청을 처리합니다.
+- **요청 방식**: `multipart/form-data`
+- **요청 필드**
+  - `user_id` : 유저의 아이디
+  - `pw`: 비밀번호
+
+#### 📍 GET `/lipstick/{color}`
+
+- **설명**: 해당 피부톤에 어울리는 립스틱 색상들을 반환합니다.
+- **요청 방식**: `query parameter`
+- **요청 필드**
+  - `color` : 퍼스널 컬러
 
 ---
 

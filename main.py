@@ -10,44 +10,19 @@ import psycopg2.errors as errors
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
-    # docs_url=None,  # 주석 해제 시 Swagger 문서 비활성화
+    docs_url=None,  # 주석 해제 시 Swagger 문서 비활성화
+    redoc_url=None
 )
 
 
 
 # 라우터 정의 (기능별 분리)
-predict = APIRouter(tags=['predict'], prefix='/predict')  # 퍼스널 컬러 예측 관련
 chat = APIRouter(tags=['chat'], prefix='/chat')            # 채팅 기능 관련
 user = APIRouter(tags=['user'], prefix='/user')            # 사용자 정보 관련
-login = APIRouter(tags=['login'], prefix='/login')  # 로그인 관련
 
 
 # 학습된 YOLOv11-CLS 모델 로드
 model = YOLO('best.pt')
-
-# ====================[ 로그인 기능 ]====================
-
-# 얼굴 이미지 업로드 → 퍼스널 컬러 예측
-@login.post('/')
-async def predict_image(login:Login=Form(...)):
-    with connect() as conn:
-        df=pd.read_sql('select * from "user" where user_id=%s and pw=%s',(login.user_id,hash(login.pw)))
-        df['msg']="로그인 완료"if len(df)==1 else "아이디나 비밀번호를 확인해주세요"
-        return df.to_json(orient="records")[0]
-
-# ====================[ 예측 기능 ]====================
-
-# 얼굴 이미지 업로드 → 퍼스널 컬러 예측
-@predict.post('/')
-async def predict_image(img: UploadFile,id:str=Form(...)):
-    img_byte = await img.read()
-    img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
-    result = model.predict(img_pil)[0].probs.top1
-    with connect() as conn:
-        cursor=conn.cursor()
-        cursor.execute('update "user" set color_id=%s where user_id=%s',(result,id))
-        conn.commit()
-    return to_response(model.names[result])
 
 # ====================[ 채팅 기능 ]====================
 
@@ -64,21 +39,13 @@ def get_chat(color: str):
 
 # 채팅 메시지 추가
 @chat.post("/")
-def post_chat(chat:Chat):
+def post_chat(chat:Chat=Form(...)):
     with connect() as conn:
         cursor=conn.cursor()
         cursor.execute("insert into chat(user_id,msg) values(%s,%s)",(chat.user_id,chat.msg))
     return 
 
 # ====================[ 사용자 기능 ]====================
-# 모든 사용자 정보 조회
-@user.get("/")
-def get_user():
-    with connect() as conn:
-        df=pd.read_sql('''
-        select * from "user"
-    ''',conn)
-    return to_response(df.to_dict(orient="records"))
 
 # 사용자 정보 조회
 @user.get("/{id}")
@@ -132,6 +99,39 @@ def delete_user(id: str):
             to_response("에러")
 
 
+# ====================[ 로그인 기능 ]====================
+
+# 로그인 시스템
+@app.post('/login')
+async def login(login:Login=Form(...)):
+    with connect() as conn:
+        df=pd.read_sql('select * from "user" where user_id=%s and pw=%s',(login.user_id,hash(login.pw)))
+        df['msg']="로그인 완료"if len(df)==1 else "아이디나 비밀번호를 확인해주세요"
+        return df.to_json(orient="records")[0]
+
+# ====================[ 예측 기능 ]====================
+
+# 얼굴 이미지 업로드 → 퍼스널 컬러 예측
+@app.post('/predict')
+async def predict_image(img: UploadFile,id:str=Form(...)):
+    img_byte = await img.read()
+    img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
+    result = model.predict(img_pil)[0].probs.top1
+    with connect() as conn:
+        cursor=conn.cursor()
+        cursor.execute('update "user" set color_id=%s where user_id=%s',(result,id))
+        conn.commit()
+    return to_response(model.names[result])
+
+# ====================[ 립스틱 반환 기능 ]====================
+
+# 퍼스널컬러->어울리는 립스틱 해시코드 반환
+@app.get('/lipstick/{color}')
+async def lipstick(color:str):
+    with connect() as conn:
+        df=pd.read_sql('select * from lipstick where color_id=%s',conn,(color,))
+    return to_response(df['hex_code'].values)
+
 # ====================[ 예외 처리 ]====================
 
 # 404 에러 응답 커스터마이징
@@ -141,5 +141,4 @@ def error(request: Request, exc: HTTPException):
 
 # 라우터 등록
 app.include_router(chat)
-app.include_router(predict)
 app.include_router(user)
