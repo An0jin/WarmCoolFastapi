@@ -130,7 +130,7 @@
 
 ## 💻 기술 스택
 
-- **AI/ML**: ![Ultralytics(YOLOv11-CLS)](https://img.shields.io/badge/YOLOv11--CLS(Ultralytics)-111F68?style=flat&logo=Ultralytics&logoColor=white)
+- **AI/ML**: ![Ultralytics(YOLOv11-CLS)](https://img.shields.io/badge/YOLOv11--CLS-111F68?style=flat&logo=Ultralytics&logoColor=white)
 - **백엔드**: ![FastAPI](https://img.shields.io/badge/-FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
 - **DB** : ![Postgresql](https://img.shields.io/badge/-postgresql-4169E1?style=flat&logo=postgresql&logoColor=white)
 - **프론트엔드**: ![Unity(ARFoundation)](https://img.shields.io/badge/-ARFoundation-000000?style=flat&logo=unity&logoColor=white)
