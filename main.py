@@ -7,6 +7,7 @@ from model import Chat,User,Login
 import pandas as pd
 from db_response import *
 import psycopg2.errors as errors
+from fastapi.middleware.cors import CORSMiddleware
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
@@ -14,7 +15,13 @@ app = FastAPI(
     redoc_url=None
 )
 
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 # 라우터 정의 (기능별 분리)
 chat = APIRouter(tags=['chat'], prefix='/chat')            # 채팅 기능 관련
@@ -30,10 +37,13 @@ model = YOLO('best.pt')
 @chat.get("/{color}")
 def get_chat(color: str):
     with connect() as conn:
-        df=pd.read_sql('''
-        select chat.chat_id, "user".name , chat.msg from "user"
-                        inner join chat ON "user".user_id=chat.user_id where "user".color_id=%s
-                    order by chat.time
+        df=pd.read_sql('''SELECT chat.chat_id, "user".name, chat.msg
+                            FROM "user"
+                            INNER JOIN chat ON "user".user_id = chat.user_id
+                            INNER JOIN lipstick ON "user".hex_code = lipstick.hex_code
+                            INNER JOIN color ON lipstick.color_id = color.color_id
+                            WHERE color.color_id = %s
+                            ORDER BY chat.time;
     ''',conn,params=[color,])
     return to_response(df)
 
@@ -61,7 +71,7 @@ def post_user(user:User=Form(None)):
     with connect() as conn:
         cursor=conn.cursor()
         try:
-            var=user.user_id,hash(user.pw),user.name,user.birthday.user.gender
+            var=user.user_id,hash(user.pw),user.name,user.birthday,user.gender
             cursor.execute('insert into "user"(user_id,pw,name,birthday,gender) values (%s,%s,%s,%s,%s)',var)
         except errors.UniqueViolation:
             return to_response("이미 존재하는 아이디 입니다")
@@ -91,7 +101,7 @@ def delete_user(id: str):
         cursor=conn.cursor()
         try:
             cursor.execute('delete  from chat where user_id=%s;',(id,))
-            cursor.execute('delete  from "user where user_id=%s;',(id,))
+            cursor.execute('delete  from "user" where user_id=%s;',(id,))
             conn.commit()
             result="삭제 완료" if cursor.rowcount>0 else "존재하지 않는 아이디"
             to_response(result)

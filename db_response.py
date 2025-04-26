@@ -8,7 +8,7 @@ def connect():
                             port=int(os.getenv("MakeUpPort")),
                             user=os.getenv("MakeUpUser"),
                             password=os.getenv("MakeUpPassword"),
-                            dbname="makeup")
+                            dbname=os.getenv("MakeUpDBname"))
 def to_response(x):
     return {"result":x.to_json(orient="records",index=False)if isinstance(x,pd.DataFrame) else x} 
 
