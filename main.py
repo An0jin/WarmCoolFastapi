@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from PIL import Image
 from io import BytesIO
 from ultralytics import YOLO
-from model import Chat,User,Login
+from model import *
 import pandas as pd
 from db_response import *
 import psycopg2.errors as errors
@@ -81,13 +81,25 @@ def post_user(user:User=Form(None)):
             return to_response(f"개발자가 {e}을 실수했어요")
         return to_response("가입 완료")
 
-# 사용자 정보 수정
+# 유저 정보 변경
 @user.put("/")
 def put_user(user:User):
     with connect()as conn:
         cursor=conn.cursor()
         try:
             cursor.execute('update "user" set pw=%s, name=%s, birthday=%s,gender=%s where user_id=%s',(user.pw,user.name,user.birthday,user.gender,user.user_id))
+            conn.commit()
+            to_response("수정 완료")
+        except: 
+            to_response("에러")
+
+# 유저 정보 변경
+@user.put("/lipstick")
+def put_user_lipstick(lipstick:Lipstick):
+    with connect()as conn:
+        cursor=conn.cursor()
+        try:
+            cursor.execute('update "user" set hex_code=%s where user_id=%s',(lipstick.hex_code,lipstick.user_id))
             conn.commit()
             to_response("수정 완료")
         except: 
@@ -129,7 +141,8 @@ async def predict_image(img: UploadFile,id:str=Form(...)):
     result = model.predict(img_pil)[0].probs.top1
     with connect() as conn:
         cursor=conn.cursor()
-        cursor.execute('update "user" set color_id=%s where user_id=%s',(result,id))
+        lipstick=pd.read_sql('select * from lipstick where color_id=%s',conn,(result,))['hex_code'].values[0]
+        cursor.execute('update "user" set hex_code=%s where user_id=%s',(lipstick,id))
         conn.commit()
     return to_response(model.names[result])
 

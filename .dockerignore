@@ -4,4 +4,4 @@
 !*.md
 !*.txt
 !.*
-
+!dockerfile
