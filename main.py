@@ -52,18 +52,10 @@ def get_chat(color: str):
 def post_chat(chat:Chat=Form(...)):
     with connect() as conn:
         cursor=conn.cursor()
-        cursor.execute("insert into chat(user_id,msg) values(%s,%s)",(chat.user_id,chat.msg))
+        cursor.execute("insert into chat(user_id,msg) values(%s,%s)",vars=[chat.user_id,chat.msg])
     return 
 
 # ====================[ 사용자 기능 ]====================
-
-# 사용자 정보 조회
-@user.get("/{id}")
-def get_user(id: str):
-    print(id)
-    with connect() as conn:
-        df=pd.read_sql('select * from "user" where "user".user_id=%s',conn,params=[id,])
-    return df.to_dict(orient="records")[0]
 
 # 사용자 정보 추가
 @user.post("/")
@@ -87,11 +79,20 @@ def put_user(user:User):
     with connect()as conn:
         cursor=conn.cursor()
         try:
-            cursor.execute('update "user" set pw=%s, name=%s, birthday=%s,gender=%s where user_id=%s',(user.pw,user.name,user.birthday,user.gender,user.user_id))
+            cursor.execute('SELECT pw, name, birthday, gender FROM "user" WHERE user_id = %s', (user.user_id,))
+            current_data = cursor.fetchone()
+            if not current_data:
+                return to_response("사용자를 찾을 수 없습니다")
+            pw = hash(user.pw) if user.pw is not None else current_data[0]
+            name = user.name if user.name is not None else current_data[1]
+            birthday = user.birthday if user.birthday is not None else current_data[2]
+            gender = user.gender if user.gender is not None else current_data[3]
+            cursor.execute('UPDATE "user" SET pw=%s, name=%s, birthday=%s, gender=%s WHERE user_id=%s',
+                          (pw, name, birthday, gender, user.user_id))
             conn.commit()
-            to_response("수정 완료")
-        except: 
-            to_response("에러")
+            return to_response("수정 완료")
+        except Exception as e:
+            return to_response(f"에러 : {e}")
 
 # 유저 정보 변경
 @user.put("/lipstick")
@@ -101,9 +102,9 @@ def put_user_lipstick(lipstick:Lipstick):
         try:
             cursor.execute('update "user" set hex_code=%s where user_id=%s',(lipstick.hex_code,lipstick.user_id))
             conn.commit()
-            to_response("수정 완료")
-        except: 
-            to_response("에러")
+            return to_response("수정 완료")
+        except Exception as e:
+            return to_response(f"에러 : {e}")
 
 
 # 사용자 정보 삭제
@@ -116,9 +117,9 @@ def delete_user(id: str):
             cursor.execute('delete  from "user" where user_id=%s;',(id,))
             conn.commit()
             result="삭제 완료" if cursor.rowcount>0 else "존재하지 않는 아이디"
-            to_response(result)
-        except : 
-            to_response("에러")
+            return to_response(result)
+        except Exception as e: 
+            return to_response(f"에러 : {e}")
 
 
 # ====================[ 로그인 기능 ]====================
@@ -127,9 +128,10 @@ def delete_user(id: str):
 @app.post('/login')
 async def login(login:Login=Form(...)):
     with connect() as conn:
-        df=pd.read_sql('select * from "user" where user_id=%s and pw=%s',(login.user_id,hash(login.pw)))
-        df['msg']="로그인 완료"if len(df)==1 else "아이디나 비밀번호를 확인해주세요"
-        return df.to_json(orient="records")[0]
+        df=pd.read_sql('select user_id,name,birthday,gender,"user".hex_code, color.color_id, description from "user" inner join lipstick on "user".hex_code=lipstick.hex_code inner join color on color.color_id=lipstick.color_id where user_id=%s and pw=%s',conn,params=(login.user_id,hash(login.pw)))
+        result=df.to_dict(orient="records")[0] if len(df)>0 else dict(zip(df.columns,[None]*len(df.columns)))
+        result['msg']="로그인 완료"if len(df)==1 else '아이디나 비밀번호를 확인해주세요'
+        return result
 
 # ====================[ 예측 기능 ]====================
 
@@ -138,13 +140,15 @@ async def login(login:Login=Form(...)):
 async def predict_image(img: UploadFile,id:str=Form(...)):
     img_byte = await img.read()
     img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
-    result = model.predict(img_pil)[0].probs.top1
+    result = model.names[model.predict(img_pil)[0].probs.top1]
     with connect() as conn:
         cursor=conn.cursor()
-        lipstick=pd.read_sql('select * from lipstick where color_id=%s',conn,(result,))['hex_code'].values[0]
+        print(result)
+        lipstick=pd.read_sql('select * from lipstick where color_id=%s',conn,params=(result,))['hex_code'].values[0]
+        print(lipstick)
         cursor.execute('update "user" set hex_code=%s where user_id=%s',(lipstick,id))
         conn.commit()
-    return to_response(model.names[result])
+    return to_response(result)
 
 # ====================[ 립스틱 반환 기능 ]====================
 
@@ -152,7 +156,8 @@ async def predict_image(img: UploadFile,id:str=Form(...)):
 @app.get('/lipstick/{color}')
 async def lipstick(color:str):
     with connect() as conn:
-        df=pd.read_sql('select * from lipstick where color_id=%s',conn,(color,))
+        df=pd.read_sql('select * from lipstick where color_id=%s',conn,params=[color,])
+        print(f"결과 : {to_response(df['hex_code'].values)}")
     return to_response(df['hex_code'].values)
 
 # ====================[ 예외 처리 ]====================

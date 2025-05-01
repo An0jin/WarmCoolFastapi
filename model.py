@@ -1,16 +1,16 @@
 from pydantic import BaseModel
 from datetime import date
-
+from typing import Optional
 class Chat(BaseModel):
     user_id:str
     msg:str
     
 class User(BaseModel):
     user_id:str
-    pw:str
-    name:str
-    birthday:date
-    gender:str
+    pw:Optional[str]=None
+    name:Optional[str]=None
+    birthday:Optional[date]=None
+    gender:Optional[str]=None
 
 class Login(BaseModel):
     user_id:str

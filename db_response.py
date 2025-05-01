@@ -7,10 +7,15 @@ def connect():
     return psycopg2.connect(host=os.getenv("MakeUpHost"),
                             port=int(os.getenv("MakeUpPort")),
                             user=os.getenv("MakeUpUser"),
-                            password=os.getenv("MakeUpPassword"),
+                            password=os.getenv("makeupPW"),
                             dbname=os.getenv("MakeUpDBname"))
 def to_response(x):
-    return {"result":x.to_json(orient="records",index=False)if isinstance(x,pd.DataFrame) else x} 
+    if isinstance(x, pd.DataFrame):
+        return {"result": x.to_dict(orient="records")}
+    elif hasattr(x, 'tolist'):  # NumPy 배열 처리
+        return {"result": x.tolist()}
+    else:
+        return {"result": x}
 
 def hash(pw):
     c=ord(pw[-1])
