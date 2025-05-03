@@ -9,7 +9,7 @@ class User(BaseModel):
     user_id:str
     pw:Optional[str]=None
     name:Optional[str]=None
-    birthday:Optional[date]=None
+    year:Optional[int]=None
     gender:Optional[str]=None
 
 class Login(BaseModel):

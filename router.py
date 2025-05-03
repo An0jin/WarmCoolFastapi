@@ -47,7 +47,7 @@ def post_user(user:User=Form(None)):
             cursor=conn.cursor()
             try:
                 var=user.user_id,hash(user.pw),user.name,user.birthday,user.gender
-                cursor.execute('insert into "user"(user_id,pw,name,birthday,gender) values (%s,%s,%s,%s,%s)',var)
+                cursor.execute('insert into "user"(user_id,pw,name,year,gender) values (%s,%s,%s,%s,%s)',var)
             except errors.UniqueViolation:
                 return to_response("이미 존재하는 아이디 입니다")
             except errors.CheckViolation:
@@ -65,16 +65,8 @@ def put_user(user:User):
         with connect()as conn:
             cursor=conn.cursor()
             try:
-                cursor.execute('SELECT pw, name, birthday, gender FROM "user" WHERE user_id = %s', (user.user_id,))
-                current_data = cursor.fetchone()
-                if not current_data:
-                    return to_response("사용자를 찾을 수 없습니다")
-                pw = hash(user.pw) if user.pw is not None else current_data[0]
-                name = user.name if user.name is not None else current_data[1]
-                birthday = user.birthday if user.birthday is not None else current_data[2]
-                gender = user.gender if user.gender is not None else current_data[3]
-                cursor.execute('UPDATE "user" SET pw=%s, name=%s, birthday=%s, gender=%s WHERE user_id=%s',
-                            (pw, name, birthday, gender, user.user_id))
+                cursor.execute('UPDATE "user" SET pw=%s, name=%s, year=%s, gender=%s WHERE user_id=%s',
+                            (user.pw, user.name, user.year, user.gender, user.user_id))
                 conn.commit()
                 return to_response("수정 완료")
             except Exception as e:
