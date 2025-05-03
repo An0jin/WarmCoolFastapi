@@ -82,7 +82,7 @@ def put_user(user:User):
     except Exception as e:
         return to_response(str(e))
 
-# 유저 정보 변경
+# 립스틱 정보 변경
 @user.put("/lipstick")
 def put_user_lipstick(lipstick:Lipstick):
     try:
