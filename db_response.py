@@ -7,7 +7,7 @@ def connect():
     return psycopg2.connect(host=os.getenv("MakeUpHost"),
                             port=int(os.getenv("MakeUpPort")),
                             user=os.getenv("MakeUpUser"),
-                            password=os.getenv("makeupPW"),
+                            password=os.getenv("MakeUpPW"),
                             dbname=os.getenv("MakeUpDBname"))
 def to_response(x):
     if isinstance(x, pd.DataFrame):
