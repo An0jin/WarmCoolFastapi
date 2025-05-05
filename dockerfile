@@ -16,12 +16,7 @@ COPY ./requirements.txt /code/requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-# 필요한 파일 복사
-COPY ./main.py /code/
-COPY ./model.py /code/
-COPY ./db_response.py /code/
-COPY ./router.py /code/
-COPY ./best.pt /code/
+COPY ./ /code/
 
 # 명령어 설정
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]

@@ -5,6 +5,7 @@ from io import BytesIO
 from ultralytics import YOLO
 from fastapi.middleware.cors import CORSMiddleware
 from router import *
+import json
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
@@ -45,11 +46,11 @@ async def predict_image(img: UploadFile,id:str=Form(...)):
     with connect() as conn:
         cursor=conn.cursor()
         print(result)
-        lipstick=pd.read_sql('select * from lipstick where color_id=%s',conn,params=(result,))['hex_code'].values[0]
-        print(lipstick)
-        cursor.execute('update "user" set hex_code=%s where user_id=%s',(lipstick,id))
+        df=pd.read_sql('select color.color_id, hex_code, description from lipstick  inner join color on lipstick.color_id=color.color_id where lipstick.color_id=%s',conn,params=(result,))
+        response=json.loads(df)[0]
+        cursor.execute('update "user" set hex_code=%s where user_id=%s',(response['hex_code'],id))
         conn.commit()
-    return to_response(result)
+    return response
 
 # ====================[ 립스틱 반환 기능 ]====================
 

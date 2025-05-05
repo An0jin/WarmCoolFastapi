@@ -46,7 +46,7 @@ def post_user(user:User=Form(None)):
         with connect() as conn:
             cursor=conn.cursor()
             try:
-                var=user.user_id,hash(user.pw),user.name,user.birthday,user.gender
+                var=user.user_id,hash(user.pw),user.name,user.year,user.gender
                 cursor.execute('insert into "user"(user_id,pw,name,year,gender) values (%s,%s,%s,%s,%s)',var)
             except errors.UniqueViolation:
                 return to_response("이미 존재하는 아이디 입니다")
