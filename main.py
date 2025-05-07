@@ -27,16 +27,16 @@ model = YOLO('best.pt')
 # ====================[ 로그인 기능 ]====================
 @app.get("/")
 def index():
-    return to_response("user_id로 변경함")
+    return to_response("inner에서 left로 바꿈")
 # ====================[ 로그인 기능 ]====================
 
 # 로그인 시스템
 @app.post('/login')
 async def login(login:Login=Form(...)):
     with connect() as conn:
-        df=pd.read_sql('select user_id,name,year,gender,"user".hex_code, color.color_id, description from "user" inner join lipstick on "user".hex_code=lipstick.hex_code inner join color on color.color_id=lipstick.color_id where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw)))
+        df=pd.read_sql('select user_id,name,year,gender, "user".hex_code, color.color_id, description from "user" left join lipstick on "user".hex_code=lipstick.hex_code left join color on color.color_id=lipstick.color_id where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw),))
         result=df.to_dict(orient="records")[0] if len(df)>0 else dict(zip(df.columns,[None]*len(df.columns)))
-        result['msg']="성공"if len(df)==1 else '아이디나 비밀번호를 확인해주세요'
+        result['msg']="성공"if  len(df)>0 else '아이디나 비밀번호를 확인해주세요'
         return result
 
 # ====================[ 예측 기능 ]====================

@@ -69,7 +69,7 @@ def put_user(user:User):
             cursor=conn.cursor()
             try:
                 cursor.execute('UPDATE "user" SET pw=%s, name=%s, year=%s, gender=%s WHERE user_id=%s',
-                            (user.pw, user.name, user.year, user.gender, user.user_id))
+                            (hashpw(user.pw), user.name, user.year, user.gender, user.user_id))
                 conn.commit()
                 return to_response("수정 완료")
             except Exception as e:

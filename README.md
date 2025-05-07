@@ -132,8 +132,8 @@
 
 - ![FastAPI](https://img.shields.io/badge/-FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
 - ![docker](https://img.shields.io/badge/-docker-2496ED?style=flat&logo=docker&logoColor=white)
-- ![amazonec2](https://img.shields.io/badge/-AWS%20EC2-FF9900?style=flat&logo=amazonec2&logoColor=white)
-
+- ![amazonwebservices](https://img.shields.io/badge/-AWS%20AppRunner-232F3E?style=flat&logo=amazonwebservices&logoColor=white), 
+- ![amazonwebservices](https://img.shields.io/badge/-AWS%20Elastic%20Container%20Registry-232F3E?style=flat&logo=amazonwebservices&logoColor=white)
 ---
 
 ## 💻 기술 스택
