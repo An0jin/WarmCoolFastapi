@@ -27,7 +27,7 @@ def get_chat(color: str):
         return to_response(str(e))
 
 # 채팅 메시지 추가
-@chat.post("/")
+@chat.post("")
 def post_chat(chat:Chat=Form(...)):
     try:
         with connect() as conn:
@@ -40,14 +40,17 @@ def post_chat(chat:Chat=Form(...)):
 # ====================[ 사용자 기능 ]====================
 
 # 사용자 정보 추가
-@user.post("/")
-def post_user(user:User=Form(None)):
+@user.post("")
+def post_user(user:User=Form(...)):
     try:
+        print("접속중")
         with connect() as conn:
             cursor=conn.cursor()
             try:
-                var=user.user_id,hash(user.pw),user.name,user.year,user.gender
+                print(hashpw(user.pw))
+                var=user.user_id,hashpw(user.pw),user.name,user.year,user.gender
                 cursor.execute('insert into "user"(user_id,pw,name,year,gender) values (%s,%s,%s,%s,%s)',var)
+                conn.commit()
             except errors.UniqueViolation:
                 return to_response("이미 존재하는 아이디 입니다")
             except errors.CheckViolation:
@@ -59,7 +62,7 @@ def post_user(user:User=Form(None)):
         return to_response(str(e))
 
 # 유저 정보 변경
-@user.put("/")
+@user.put("")
 def put_user(user:User):
     try:
         with connect()as conn:

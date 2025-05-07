@@ -25,12 +25,16 @@ app.add_middleware(
 model = YOLO('best.pt')
 
 # ====================[ 로그인 기능 ]====================
+@app.get("/")
+def index():
+    return to_response("user_id로 변경함")
+# ====================[ 로그인 기능 ]====================
 
 # 로그인 시스템
 @app.post('/login')
 async def login(login:Login=Form(...)):
     with connect() as conn:
-        df=pd.read_sql('select user_id,name,year,gender,"user".hex_code, color.color_id, description from "user" inner join lipstick on "user".hex_code=lipstick.hex_code inner join color on color.color_id=lipstick.color_id where user_id=%s and pw=%s',conn,params=(login.user_id,hash(login.pw)))
+        df=pd.read_sql('select user_id,name,year,gender,"user".hex_code, color.color_id, description from "user" inner join lipstick on "user".hex_code=lipstick.hex_code inner join color on color.color_id=lipstick.color_id where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw)))
         result=df.to_dict(orient="records")[0] if len(df)>0 else dict(zip(df.columns,[None]*len(df.columns)))
         result['msg']="성공"if len(df)==1 else '아이디나 비밀번호를 확인해주세요'
         return result
@@ -39,16 +43,19 @@ async def login(login:Login=Form(...)):
 
 # 얼굴 이미지 업로드 → 퍼스널 컬러 예측
 @app.post('/predict')
-async def predict_image(img: UploadFile,id:str=Form(...)):
+async def predict_image(img: UploadFile, user_id: str = Form(...)):
     img_byte = await img.read()
     img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
     result = model.names[model.predict(img_pil)[0].probs.top1]
     with connect() as conn:
-        cursor=conn.cursor()
+        cursor = conn.cursor()
         print(result)
-        df=pd.read_sql('select color.color_id, hex_code, description from lipstick  inner join color on lipstick.color_id=color.color_id where lipstick.color_id=%s',conn,params=(result,))
-        response=json.loads(df)[0]
-        cursor.execute('update "user" set hex_code=%s where user_id=%s',(response['hex_code'],id))
+        df = pd.read_sql('select color.color_id, hex_code, description from lipstick inner join color on lipstick.color_id=color.color_id where lipstick.color_id=%s', conn, params=(result,))
+        # DataFrame을 JSON 문자열로 변환 후 파싱
+        df_json = df.to_json(orient="records")
+        response = json.loads(df_json)[0]
+        # user_id 변수 사용 (id 대신)
+        cursor.execute('update "user" set hex_code=%s where user_id=%s', (response['hex_code'], user_id))
         conn.commit()
     return response
 

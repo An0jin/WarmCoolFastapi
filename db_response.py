@@ -17,9 +17,9 @@ def to_response(x):
     else:
         return {"result": x}
 
-def hash(pw):
+def hashpw(pw):
     c=ord(pw[-1])
-    for i in range(c%10):
+    for i in range(c%5):
         func=hashlib.blake2b if bool(i%2) else hashlib.sha256
         pw=func(pw.encode()).hexdigest()
     return pw
