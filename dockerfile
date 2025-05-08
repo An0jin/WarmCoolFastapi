@@ -3,7 +3,6 @@ FROM python:3.11.9
 
 WORKDIR /code
 
-# OpenCV 및 기타 필요한 라이브러리 설치
 RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0 \
