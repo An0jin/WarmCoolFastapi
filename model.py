@@ -17,5 +17,5 @@ class Login(BaseModel):
     pw:str
 
 class Lipstick(BaseModel):
-    user_id:str
+    user_id:Optional[str]=None
     hex_code:str

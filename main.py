@@ -25,10 +25,6 @@ app.add_middleware(
 model = YOLO('best.pt')
 
 # ====================[ 로그인 기능 ]====================
-@app.get("/")
-def index():
-    return to_response("inner에서 left로 바꿈")
-# ====================[ 로그인 기능 ]====================
 
 # 로그인 시스템
 @app.post('/login')
@@ -43,7 +39,7 @@ async def login(login:Login=Form(...)):
 
 # 얼굴 이미지 업로드 → 퍼스널 컬러 예측
 @app.post('/predict')
-async def predict_image(img: UploadFile, user_id: str = Form(...)):
+async def predict_image(img: UploadFile, user_id: str = Form(None)):
     img_byte = await img.read()
     img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
     result = model.names[model.predict(img_pil)[0].probs.top1]
@@ -55,7 +51,8 @@ async def predict_image(img: UploadFile, user_id: str = Form(...)):
         df_json = df.to_json(orient="records")
         response = json.loads(df_json)[0]
         # user_id 변수 사용 (id 대신)
-        cursor.execute('update "user" set hex_code=%s where user_id=%s', (response['hex_code'], user_id))
+        if user_id!=None:
+            cursor.execute('update "user" set hex_code=%s where user_id=%s', (response['hex_code'], user_id))
         conn.commit()
     return response
 
