@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, HTTPException, Request
+from fastapi import FastAPI, UploadFile, HTTPException, Request,Form
 from fastapi.responses import JSONResponse
 from PIL import Image
 from io import BytesIO
@@ -6,6 +6,9 @@ from ultralytics import YOLO
 from fastapi.middleware.cors import CORSMiddleware
 from router import *
 import json
+from openai import OpenAI
+import os
+
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
@@ -34,6 +37,7 @@ async def login(login:Login=Form(...)):
         result=df.to_dict(orient="records")[0] if len(df)>0 else dict(zip(df.columns,[None]*len(df.columns)))
         result['msg']="성공"if  len(df)>0 else '아이디나 비밀번호를 확인해주세요'
         return result
+
 
 # ====================[ 예측 기능 ]====================
 
@@ -65,6 +69,25 @@ async def lipstick(color:str):
         df=pd.read_sql('select * from lipstick where color_id=%s',conn,params=[color,])
         print(f"결과 : {to_response(df['hex_code'].values)}")
     return to_response(df['hex_code'].values)
+
+# ====================[ AI 챗봇 기능 ]====================
+@app.post('/llm')
+async def llm(llm:LLM=Form(...)):
+    with connect() as conn:
+        colors=list(map(lambda x:x[0],pd.read_sql('select hex_code from lipstick where color_id=%s',conn,params=[llm.color_id,]).values))
+        client = OpenAI(api_key=os.getenv("openAIKey"))
+        response = client.chat.completions.create(
+            model="gpt-4.1-nano",  # 사용 가능한 모델명
+            messages=[
+                {"role": "system", "content": f"You are given a situation and you have to pick a color among {colors}. Please respond with a color code like #ffffff and do not say anything else."},
+                {"role": "user", "content": llm.msg}
+            ]
+        )
+        shap=response.choices[0].message.content.find("#")
+        color=response.choices[0].message.content[shap:shap+7]
+        cursor.execute('update "user" set hex_code=%s where user_id=%s',(color,llm.user_id))
+        conn.commit()        
+    return to_response(color)
 
 # ====================[ 예외 처리 ]====================
 

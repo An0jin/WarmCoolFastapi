@@ -4,6 +4,11 @@ from typing import Optional
 class Chat(BaseModel):
     user_id:str
     msg:str
+
+class LLM(BaseModel):
+    user_id:str
+    color_id:str
+    msg:str
     
 class User(BaseModel):
     user_id:str
