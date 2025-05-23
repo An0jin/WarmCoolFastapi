@@ -85,6 +85,7 @@ async def llm(llm:LLM=Form(...)):
         )
         shap=response.choices[0].message.content.find("#")
         color=response.choices[0].message.content[shap:shap+7]
+        cursor=conn.cursor()
         cursor.execute('update "user" set hex_code=%s where user_id=%s',(color,llm.user_id))
         conn.commit()        
     return to_response(color)
