@@ -70,24 +70,34 @@ async def lipstick(color:str):
         print(f"결과 : {to_response(df['hex_code'].values)}")
     return to_response(df['hex_code'].values)
 
+
+# 퍼스널컬러->안어울리는 립스틱 해시코드 반환
+@app.get('/lipstick_not/{color}')
+async def lipstick_not(color:str):
+    with connect() as conn:
+        df=pd.read_sql('select * from lipstick where color_id!=%s',conn,params=[color,])
+        print(f"결과 : {to_response(df['hex_code'].values)}")
+    return to_response(df['hex_code'].values)
+
 # ====================[ AI 챗봇 기능 ]====================
 @app.post('/llm')
-async def llm(llm:LLM=Form(...)):
+async def llm(llm:LLM=Form(None)):
     with connect() as conn:
         colors=list(map(lambda x:x[0],pd.read_sql('select hex_code from lipstick where color_id=%s',conn,params=[llm.color_id,]).values))
         client = OpenAI(api_key=os.getenv("openAIKey"))
         response = client.chat.completions.create(
             model="gpt-4.1-nano",  # 사용 가능한 모델명
             messages=[
-                {"role": "system", "content": f"You are given a situation and you have to pick a color among {colors}. Please respond with a color code like #ffffff and do not say anything else."},
+                {"role": "system", "content": f"You are given a situation and you have to pick a lipstick color among {colors}. Please respond with a color code like #ffffff and do not say anything else."},
                 {"role": "user", "content": llm.msg}
             ]
         )
         shap=response.choices[0].message.content.find("#")
         color=response.choices[0].message.content[shap:shap+7]
-        cursor=conn.cursor()
-        cursor.execute('update "user" set hex_code=%s where user_id=%s',(color,llm.user_id))
-        conn.commit()        
+        if llm.user_id!=None:
+            cursor=conn.cursor()
+            cursor.execute('update "user" set hex_code=%s where user_id=%s',(color,llm.user_id))
+            conn.commit()        
     return to_response(color)
 
 # ====================[ 예외 처리 ]====================
