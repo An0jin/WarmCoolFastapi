@@ -26,7 +26,6 @@ app.add_middleware(
 
 # 학습된 YOLOv11-CLS 모델 로드
 model = YOLO('best.pt')
-trans={0:'warm',1:'cool'}
 # ====================[ 로그인 기능 ]====================
 
 # 로그인 시스템
@@ -54,7 +53,6 @@ async def predict_image(img: UploadFile, user_id: str = Form(None)):
         # DataFrame을 JSON 문자열로 변환 후 파싱
         df_json = df.to_json(orient="records")
         response = json.loads(df_json)[0]
-        response['color_id']=trans[model.predict(img_pil)[0].probs.top1]
         # user_id 변수 사용 (id 대신)
         if user_id!=None:
             cursor.execute('update "user" set hex_code=%s where user_id=%s', (response['hex_code'], user_id))
