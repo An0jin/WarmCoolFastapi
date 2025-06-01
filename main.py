@@ -8,7 +8,7 @@ from router import *
 import json
 from openai import OpenAI
 import os
-
+import re
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
@@ -91,8 +91,8 @@ async def llm(llm:LLM=Form(None)):
                 {"role": "user", "content": llm.msg}
             ]
         )
-        shap=response.choices[0].message.content.find("#")
-        color=response.choices[0].message.content[shap:shap+7]
+        patten="#[A-Fa-f\d]{6}"
+        color=re.findall(patten,response.choices[0].message.content)[0]
         if llm.user_id!=None:
             cursor=conn.cursor()
             cursor.execute('update "user" set hex_code=%s where user_id=%s',(color,llm.user_id))
