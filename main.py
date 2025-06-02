@@ -34,7 +34,7 @@ async def login(login:Login=Form(...)):
     with connect() as conn:
         df=pd.read_sql('select user_id,name,year,gender, "user".hex_code, color.color_id, description from "user" left join lipstick on "user".hex_code=lipstick.hex_code left join color on color.color_id=lipstick.color_id where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw),))
         result=df.to_dict(orient="records")[0] if len(df)>0 else dict(zip(df.columns,[None]*len(df.columns)))
-        result['msg']="성공"if  len(df)>0 else '아이디나 비밀번호를 확인해주세요'
+        result['msg']="성공"if  len(df)>0 else 'check your id or password'
         return result
 
 
