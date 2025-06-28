@@ -9,10 +9,11 @@ import json
 from openai import OpenAI
 import os
 import re
+from ultralytics import YOLO
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
-    docs_url=None,  # 주석 해제 시 Swagger 문서 비활성화
+    # docs_url=None,  # 주석 해제 시 Swagger 문서 비활성화
     redoc_url=None
 )
 
@@ -23,9 +24,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+model=YOLO('best.pt')
+# ====================[ 테스트용 ]====================
 
-# 학습된 YOLOv11-CLS 모델 로드
-model = YOLO('best.pt')
+@app.get('/')
+async def test():
+    return "Maker is anyoungjin"
+
 # ====================[ 로그인 기능 ]====================
 
 # 로그인 시스템
@@ -45,18 +50,25 @@ async def login(login:Login=Form(...)):
 async def predict_image(img: UploadFile, user_id: str = Form(None)):
     img_byte = await img.read()
     img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
-    result = model.names[model.predict(img_pil)[0].probs.top1]
+    results = model.predict(img_pil, iou=0.1, agnostic_nms=True)
+    result = results[0].boxes.cls
+    
+    if len(result) > 1:
+        return {"color_id": "한사람만 테스트 할수 있습니다", "hex_code": "","description":""}
+    elif len(result) == 0:
+        return {"color_id": "얼굴을 찾을 수 없습니다", "hex_code": "","description":""}
+    else:
+        color_id=model.names[result[0].item()]
     with connect() as conn:
         cursor = conn.cursor()
-        print(result)
-        df = pd.read_sql('select color.color_id, hex_code, description from lipstick inner join color on lipstick.color_id=color.color_id where lipstick.color_id=%s', conn, params=(result,))
+        df = pd.read_sql('select color.color_id, hex_code, description from lipstick inner join color on lipstick.color_id=color.color_id where lipstick.color_id=%s', conn, params=(color_id,))
         # DataFrame을 JSON 문자열로 변환 후 파싱
         df_json = df.to_json(orient="records")
-        response = json.loads(df_json)[0]
-        # user_id 변수 사용 (id 대신)
-        if user_id!=None:
-            cursor.execute('update "user" set hex_code=%s where user_id=%s', (response['hex_code'], user_id))
-        conn.commit()
+    response = json.loads(df_json)[0]
+    # user_id 변수 사용 (id 대신)
+    if user_id!=None:
+        cursor.execute('update "user" set hex_code=%s where user_id=%s', (response['hex_code'], user_id))
+    conn.commit()
     return response
 
 # ====================[ 립스틱 반환 기능 ]====================
@@ -69,19 +81,11 @@ async def lipstick(color:str):
         print(f"결과 : {to_response(df['hex_code'].values)}")
     return to_response(df['hex_code'].values)
 
-
-# 퍼스널컬러->안어울리는 립스틱 해시코드 반환
-@app.get('/lipstick_not/{color}')
-async def lipstick_not(color:str):
-    with connect() as conn:
-        df=pd.read_sql('select * from lipstick where color_id!=%s',conn,params=[color,])
-        print(f"결과 : {to_response(df['hex_code'].values)}")
-    return to_response(df['hex_code'].values)
-
 # ====================[ AI 챗봇 기능 ]====================
 @app.post('/llm')
 async def llm(llm:LLM=Form(None)):
     with connect() as conn:
+        load_dotenv()
         colors=list(map(lambda x:x[0],pd.read_sql('select hex_code from lipstick where color_id=%s',conn,params=[llm.color_id,]).values))
         client = OpenAI(api_key=os.getenv("openAIKey"))
         response = client.chat.completions.create(
