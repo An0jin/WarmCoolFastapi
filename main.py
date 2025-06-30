@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, HTTPException, Request,Form
+from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
 from PIL import Image
 from io import BytesIO
@@ -10,6 +11,8 @@ from openai import OpenAI
 import os
 import re
 from ultralytics import YOLO
+import jwt
+
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
@@ -29,7 +32,7 @@ model=YOLO('best.pt')
 
 @app.get('/')
 async def test():
-    return "Maker is anyoungjin"
+    return FileResponse("index.html")
 
 # ====================[ 로그인 기능 ]====================
 
@@ -40,6 +43,7 @@ async def login(login:Login=Form(...)):
         df=pd.read_sql('select user_id,name,year,gender, "user".hex_code, color.color_id, description from "user" left join lipstick on "user".hex_code=lipstick.hex_code left join color on color.color_id=lipstick.color_id where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw),))
         result=df.to_dict(orient="records")[0] if len(df)>0 else dict(zip(df.columns,[None]*len(df.columns)))
         result['msg']="성공"if  len(df)>0 else 'check your id or password'
+        result['user_id']=jwt.encode(result['user_id'], 'secret', algorithm='HS256')
         return result
 
 

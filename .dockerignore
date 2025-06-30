@@ -4,6 +4,7 @@
 !*.md
 !*.txt
 !.*
+!index.html
 !dockerfile
 !uploads
 !uploads/**

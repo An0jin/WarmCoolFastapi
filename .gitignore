@@ -8,3 +8,4 @@
 !dockerfile
 !uploads
 !uploads/**
+!index.html
