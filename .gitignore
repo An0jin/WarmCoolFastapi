@@ -9,3 +9,4 @@
 !uploads
 !uploads/**
 !index.html
+!*.ipynb

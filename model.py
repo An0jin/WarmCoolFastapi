@@ -2,11 +2,11 @@ from pydantic import BaseModel
 from datetime import date
 from typing import Optional
 class Chat(BaseModel):
-    user_id:str
+    token:str
     msg:str
 
 class LLM(BaseModel):
-    user_id:str
+    token:str
     color_id:str
     msg:str
     
@@ -22,5 +22,5 @@ class Login(BaseModel):
     pw:str
 
 class Lipstick(BaseModel):
-    user_id:Optional[str]=None
+    token:Optional[str]=None
     hex_code:str

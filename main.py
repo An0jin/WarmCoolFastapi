@@ -1,6 +1,6 @@
-from fastapi import FastAPI, UploadFile, HTTPException, Request,Form
-from fastapi.responses import FileResponse
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, UploadFile, HTTPException, Request,Form,File
+from fastapi.responses import JSONResponse,FileResponse
+from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from io import BytesIO
 from ultralytics import YOLO
@@ -11,15 +11,14 @@ from openai import OpenAI
 import os
 import re
 from ultralytics import YOLO
-import jwt
 
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
-    docs_url=None,  # 주석 해제 시 Swagger 문서 비활성화
-    redoc_url=None
+    # docs_url=None,  # 주석 해제 시 Swagger 문서 비활성화
+    # redoc_url=None
 )
-
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,19 +38,23 @@ async def test():
 # 로그인 시스템
 @app.post('/login')
 async def login(login:Login=Form(...)):
-    with connect() as conn:
-        df=pd.read_sql('select user_id,name,year,gender, "user".hex_code, color.color_id, description from "user" left join lipstick on "user".hex_code=lipstick.hex_code left join color on color.color_id=lipstick.color_id where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw),))
-        result=df.to_dict(orient="records")[0] if len(df)>0 else dict(zip(df.columns,[None]*len(df.columns)))
-        result['msg']="성공"if  len(df)>0 else 'check your id or password'
-        # result['user_id']=jwt.encode(result['user_id'], 'secret', algorithm='HS256')
-        return result
+    try:
+        with connect() as conn:
+            df=pd.read_sql('select user_id,name,year,gender, "user".hex_code, color.color_id, description from "user" left join lipstick on "user".hex_code=lipstick.hex_code left join color on color.color_id=lipstick.color_id where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw),))
+            result=df.to_dict(orient="records")[0] if len(df)==1 else dict(zip(df.columns,[None]*len(df.columns)))
+            result['msg']="성공"if  len(df)==1 else 'check your id or password'
+            result['token']=JWT.encode(result['user_id'].to_dict(orient="records")[0])if  len(df)==1 else None
+            return result
+    except Exception as e:
+        return to_response(str(e))
 
 
 # ====================[ 예측 기능 ]====================
 
 # 얼굴 이미지 업로드 → 퍼스널 컬러 예측
 @app.post('/predict')
-async def predict_image(img: UploadFile, user_id: str = Form(None)):
+async def predict_image(img: UploadFile=File(...), token: str = Form(None)):
+    user_id=JWT.decode(token)['user_id']
     img_byte = await img.read()
     img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
     results = model.predict(img_pil, iou=0.1, agnostic_nms=True)
@@ -68,6 +71,8 @@ async def predict_image(img: UploadFile, user_id: str = Form(None)):
         df = pd.read_sql('select color.color_id, hex_code, description from lipstick inner join color on lipstick.color_id=color.color_id where lipstick.color_id=%s', conn, params=(color_id,))
         # DataFrame을 JSON 문자열로 변환 후 파싱
         df_json = df.to_json(orient="records")
+        with open(f"{user_id}.png","wb") as f:
+            f.write(img_byte)
     response = json.loads(df_json)[0]
     # user_id 변수 사용 (id 대신)
     if user_id!=None:

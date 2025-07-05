@@ -1,11 +1,10 @@
 import hashlib
 import os
 import pandas as pd
-from dotenv import load_dotenv
 import psycopg2
-
-
+from dotenv import load_dotenv
 load_dotenv()
+from jose import jwt
 
 
 def connect():
@@ -34,3 +33,13 @@ def hashpw(pw):
         func = hashlib.blake2b if bool(i % 2) else hashlib.sha256
         pw = func(pw.encode()).hexdigest()
     return pw
+class JWT:
+    @staticmethod
+    def encode(user_id):
+        return jwt.encode(user_id, os.getenv("jwtSecret"), algorithm='HS256')
+    @staticmethod
+    def decode(token):
+        try:
+            return jwt.decode(token, os.getenv("jwtSecret"), algorithms=['HS256'])
+        except:
+            return None

@@ -3,6 +3,7 @@ from tool import *
 import pandas as pd
 from model import *
 import psycopg2.errors as errors
+from tool import JWT
 
 chat = APIRouter(tags=['chat'], prefix='/chat')
 user = APIRouter(tags=['user'], prefix='/user')
@@ -28,7 +29,7 @@ def post_chat(chat:Chat=Form(...)):
     try:
         with connect() as conn:
             cursor=conn.cursor()
-            cursor.execute("insert into chat(user_id,msg) values(%s,%s)",vars=[chat.user_id,chat.msg])
+            cursor.execute("insert into chat(user_id,msg) values(%s,%s)",vars=[JWT.decode(chat.token)['user_id'],chat.msg])
         return 
     except Exception as e:
         return to_response(str(e))
@@ -39,7 +40,7 @@ def post_user(user:User=Form(...)):
         with connect() as conn:
             cursor=conn.cursor()
             try:
-                var=user.user_id,hashpw(user.pw),user.name,user.year,user.gender
+                var=JWT.decode(user.token)['user_id'],hashpw(user.pw),user.name,user.year,user.gender
                 cursor.execute('insert into "user"(user_id,pw,name,year,gender) values (%s,%s,%s,%s,%s)',var)
                 conn.commit()
             except errors.UniqueViolation:
@@ -59,7 +60,7 @@ def put_user(user:User):
             cursor=conn.cursor()
             try:
                 cursor.execute('UPDATE "user" SET pw=%s, name=%s, year=%s, gender=%s WHERE user_id=%s',
-                            (hashpw(user.pw), user.name, user.year, user.gender, user.user_id))
+                            (hashpw(user.pw), user.name, user.year, user.gender, JWT.decode(user.token)['user_id']))
                 conn.commit()
                 return to_response("Modified")
             except Exception as e:
@@ -73,7 +74,7 @@ def put_user_lipstick(lipstick:Lipstick):
         with connect()as conn:
             cursor=conn.cursor()
             try:
-                cursor.execute('update "user" set hex_code=%s where user_id=%s',(lipstick.hex_code,lipstick.user_id))
+                cursor.execute('update "user" set hex_code=%s where user_id=%s',(lipstick.hex_code,JWT.decode(lipstick.token)['user_id']))
                 conn.commit()
                 return to_response("Modified")
             except Exception as e:
