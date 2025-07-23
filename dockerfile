@@ -1,5 +1,5 @@
 # 베이스 이미지로 Python 3.11 사용
-FROM python:3.13.3
+FROM python:3.12.3
 
 WORKDIR /code
 
