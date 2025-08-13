@@ -11,11 +11,10 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./requirements.txt /code/requirements.txt 
+COPY ./ /code/
 
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-COPY ./ /code/
 
 # 명령어 설정
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

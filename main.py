@@ -15,8 +15,8 @@ from ultralytics import YOLO
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
-    # docs_url=None,  # 주석 해제 시 Swagger 문서 비활성화
-    # redoc_url=None
+    docs_url=None,  # 주석 해제 시 Swagger 문서 비활성화
+    redoc_url=None
 )
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.add_middleware(

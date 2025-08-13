@@ -5,7 +5,7 @@
 !*.txt
 !.*
 .env
-!dockerfile
+!Dockerfile
 !uploads
 !uploads/**
 !index.html

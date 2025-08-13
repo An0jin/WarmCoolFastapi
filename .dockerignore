@@ -5,6 +5,6 @@
 !*.txt
 !.*
 !index.html
-!dockerfile
+!Dockerfile
 !uploads
 !uploads/**
