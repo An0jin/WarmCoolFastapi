@@ -29,9 +29,9 @@ app.add_middleware(
 model=YOLO('best.pt')
 # ====================[ 테스트용 ]====================
 
-@app.get('/')
-async def test():
-    return FileResponse("index.html")
+# @app.get('/')
+# async def test():
+#     return FileResponse("index.html")
 
 # ====================[ 로그인 기능 ]====================
 
