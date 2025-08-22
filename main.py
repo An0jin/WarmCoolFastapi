@@ -95,7 +95,8 @@ async def lipstick(color:str):
 async def llm(llm:LLM=Form(None)):
     with connect() as conn:
         load_dotenv()
-        colors=list(map(lambda x:x[0],pd.read_sql('select hex_code from lipstick where color_id=%s',conn,params=[llm.color_id,]).values))
+        user_id=JWT.decode(llm.token)['user_id']
+        colors=list(map(lambda x:x[0],pd.read_sql('select hex_code from lipstick where color_id(select lipstick.color_id from "user" inner join lipstick on "user".hex_code=lipstick.hex_code where user_id=%s)',conn,params=[user_id,]).values))
         client = OpenAI(api_key=os.getenv("openAIKey"))
         response = client.chat.completions.create(
             model="gpt-4.1-nano",  # 사용 가능한 모델명

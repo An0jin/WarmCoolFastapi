@@ -37,30 +37,36 @@ def post_chat(chat:Chat=Form(...)):
 @user.post("")
 def post_user(user:User=Form(...)):
     try:
+        response={"token":JWT.encode(user.user_id)}
         with connect() as conn:
             cursor=conn.cursor()
             try:
-                var=JWT.decode(user.token)['user_id'],hashpw(user.pw),user.name,user.year,user.gender
+                var=user.user_id,hashpw(user.pw),user.name,user.year,user.gender
                 cursor.execute('insert into "user"(user_id,pw,name,year,gender) values (%s,%s,%s,%s,%s)',var)
                 conn.commit()
             except errors.UniqueViolation:
-                return to_response("Already exists")
+                response["result"]="Already exists"
+                return response
             except errors.CheckViolation:
-                return to_response("Please enter a valid gender")
+                response["result"]="Please enter a valid gender"
+                return response
             except Exception as e:
-                return to_response(f"Developer error : {e}")
-            return to_response("Sign up complete")
+                response["result"]="Developer error : {e}"
+                return response
+            response["result"]="Sign up complete"
+            return response
     except Exception as e:
-        return to_response(str(e))
+        response["result"]=f"Developer error : {e}"
+        return response
 
 @user.put("")
-def put_user(user:User):
+def put_user(update:Update):
     try:
         with connect()as conn:
             cursor=conn.cursor()
             try:
                 cursor.execute('UPDATE "user" SET pw=%s, name=%s, year=%s, gender=%s WHERE user_id=%s',
-                            (hashpw(user.pw), user.name, user.year, user.gender, JWT.decode(user.token)['user_id']))
+                            (hashpw(update.pw), update.name, update.year, update.gender, JWT.decode(update.token)['user_id']))
                 conn.commit()
                 return to_response("Modified")
             except Exception as e:
@@ -84,13 +90,13 @@ def put_user_lipstick(lipstick:Lipstick):
 
 
 @user.delete("/{id}")
-def delete_user(id: str):
+def delete_user(token: str):
     try:
         with connect()as conn:
             cursor=conn.cursor()
             try:
-                cursor.execute('delete  from chat where user_id=%s;',(id,))
-                cursor.execute('delete  from "user" where user_id=%s;',(id,))
+                cursor.execute('delete  from chat where user_id=%s; delete  from "user" where user_id=%s;',
+                               (JWT.decode(token)['user_id'], JWT.decode(token)['user_id']))
                 conn.commit()
                 result="Deleted" if cursor.rowcount>0 else "Does not exist"
                 return to_response(result)
