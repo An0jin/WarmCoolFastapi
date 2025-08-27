@@ -43,7 +43,7 @@ async def login(login:Login=Form(...)):
             df=pd.read_sql('select user_id,name,year,gender, "user".hex_code, color.color_id, description from "user" left join lipstick on "user".hex_code=lipstick.hex_code left join color on color.color_id=lipstick.color_id where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw),))
             result=df.to_dict(orient="records")[0] if len(df)==1 else dict(zip(df.columns,[None]*len(df.columns)))
             result['msg']="성공"if  len(df)==1 else 'check your id or password'
-            result['token']=JWT.encode(result['user_id'].to_dict(orient="records")[0])if  len(df)==1 else None
+            result['token']=JWT.encode(login.user_id)if  len(df)==1 else None
             return result
     except Exception as e:
         return to_response(str(e))
@@ -54,7 +54,6 @@ async def login(login:Login=Form(...)):
 # 얼굴 이미지 업로드 → 퍼스널 컬러 예측
 @app.post('/predict')
 async def predict_image(img: UploadFile=File(...), token: str = Form(None)):
-    user_id=JWT.decode(token)['user_id']
     img_byte = await img.read()
     img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
     results = model.predict(img_pil, iou=0.1, agnostic_nms=True)
@@ -71,11 +70,10 @@ async def predict_image(img: UploadFile=File(...), token: str = Form(None)):
         df = pd.read_sql('select color.color_id, hex_code, description from lipstick inner join color on lipstick.color_id=color.color_id where lipstick.color_id=%s', conn, params=(color_id,))
         # DataFrame을 JSON 문자열로 변환 후 파싱
         df_json = df.to_json(orient="records")
-        with open(f"{user_id}.png","wb") as f:
-            f.write(img_byte)
     response = json.loads(df_json)[0]
     # user_id 변수 사용 (id 대신)
-    if user_id!=None:
+    if token!=None:
+        user_id=JWT.decode(token)
         cursor.execute('update "user" set hex_code=%s where user_id=%s', (response['hex_code'], user_id))
     conn.commit()
     return response
@@ -95,7 +93,7 @@ async def lipstick(color:str):
 async def llm(llm:LLM=Form(None)):
     with connect() as conn:
         load_dotenv()
-        user_id=JWT.decode(llm.token)['user_id']
+        user_id=JWT.decode(llm.token)
         colors=list(map(lambda x:x[0],pd.read_sql('select hex_code from lipstick where color_id(select lipstick.color_id from "user" inner join lipstick on "user".hex_code=lipstick.hex_code where user_id=%s)',conn,params=[user_id,]).values))
         client = OpenAI(api_key=os.getenv("openAIKey"))
         response = client.chat.completions.create(

@@ -33,13 +33,14 @@ def hashpw(pw):
         func = hashlib.blake2b if bool(i % 2) else hashlib.sha256
         pw = func(pw.encode()).hexdigest()
     return pw
+
 class JWT:
     @staticmethod
     def encode(user_id):
-        return jwt.encode(user_id, os.getenv("jwtSecret"), algorithm='HS256')
+        return jwt.encode({'user_id':user_id}, os.getenv("jwtSecret"), algorithm='HS256')
     @staticmethod
     def decode(token):
         try:
-            return jwt.decode(token, os.getenv("jwtSecret"), algorithms=['HS256'])
+            return jwt.decode(token, os.getenv("jwtSecret"), algorithms=['HS256'])['user_id']
         except:
             return None

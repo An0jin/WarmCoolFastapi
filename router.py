@@ -29,7 +29,7 @@ def post_chat(chat:Chat=Form(...)):
     try:
         with connect() as conn:
             cursor=conn.cursor()
-            cursor.execute("insert into chat(user_id,msg) values(%s,%s)",vars=[JWT.decode(chat.token)['user_id'],chat.msg])
+            cursor.execute("insert into chat(user_id,msg) values(%s,%s)",vars=[JWT.decode(chat.token),chat.msg])
         return 
     except Exception as e:
         return to_response(str(e))
@@ -66,7 +66,7 @@ def put_user(update:Update):
             cursor=conn.cursor()
             try:
                 cursor.execute('UPDATE "user" SET pw=%s, name=%s, year=%s, gender=%s WHERE user_id=%s',
-                            (hashpw(update.pw), update.name, update.year, update.gender, JWT.decode(update.token)['user_id']))
+                            (hashpw(update.pw), update.name, update.year, update.gender, JWT.decode(update.token)))
                 conn.commit()
                 return to_response("Modified")
             except Exception as e:
@@ -77,10 +77,11 @@ def put_user(update:Update):
 @user.put("/lipstick")
 def put_user_lipstick(lipstick:Lipstick):
     try:
+        user_id=JWT.decode(lipstick.token)
         with connect()as conn:
             cursor=conn.cursor()
             try:
-                cursor.execute('update "user" set hex_code=%s where user_id=%s',(lipstick.hex_code,JWT.decode(lipstick.token)['user_id']))
+                cursor.execute('update "user" set hex_code=%s where user_id=%s',(lipstick.hex_code,user_id))
                 conn.commit()
                 return to_response("Modified")
             except Exception as e:
@@ -89,14 +90,15 @@ def put_user_lipstick(lipstick:Lipstick):
         return to_response(str(e))
 
 
-@user.delete("/{id}")
-def delete_user(token: str):
+@user.delete("/{token}")
+def delete_user():
     try:
+        user_id=JWT.decode(token)
         with connect()as conn:
             cursor=conn.cursor()
             try:
                 cursor.execute('delete  from chat where user_id=%s; delete  from "user" where user_id=%s;',
-                               (JWT.decode(token)['user_id'], JWT.decode(token)['user_id']))
+                               (user_id, user_id))
                 conn.commit()
                 result="Deleted" if cursor.rowcount>0 else "Does not exist"
                 return to_response(result)
