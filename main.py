@@ -7,18 +7,16 @@ from ultralytics import YOLO
 from fastapi.middleware.cors import CORSMiddleware
 from router import *
 import json
-from openai import OpenAI
 import os
 import re
 from ultralytics import YOLO
-
+from tool import LipstickLLM
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
     docs_url=None,  # 주석 해제 시 Swagger 문서 비활성화
     redoc_url=None
 )
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -95,16 +93,10 @@ async def llm(llm:LLM=Form(None)):
         load_dotenv()
         user_id=JWT.decode(llm.token)
         colors=list(map(lambda x:x[0],pd.read_sql('select hex_code from lipstick where color_id(select lipstick.color_id from "user" inner join lipstick on "user".hex_code=lipstick.hex_code where user_id=%s)',conn,params=[user_id,]).values))
-        client = OpenAI(api_key=os.getenv("openAIKey"))
-        response = client.chat.completions.create(
-            model="gpt-4.1-nano",  # 사용 가능한 모델명
-            messages=[
-                {"role": "system", "content": f"You are given a situation and you have to pick a lipstick color among {colors}. Please respond with a color code like #ffffff and do not say anything else."},
-                {"role": "user", "content": llm.msg}
-            ]
-        )
+        llm=LipstickLLM()
+        response = llm.invoke(f"{colors} Among them, recommend lipstick colors that are suitable for the situation like {llm.msg} in hex code format like #000000 #ffffff")
         patten="#[A-Fa-f\d]{6}"
-        color=re.findall(patten,response.choices[0].message.content)[0]
+        color=re.findall(patten,response)[0]
         if llm.user_id!=None:
             cursor=conn.cursor()
             cursor.execute('update "user" set hex_code=%s where user_id=%s',(color,llm.user_id))
