@@ -2,7 +2,7 @@
 
 ## 📌 개요
 
-이 리포지토리는 **YOLOv11-CLS 모델을 FastAPI로 서빙**하여, Unity 애플리케이션과 통신하는 퍼스널 컬러 분석 백엔드 서버입니다. 사용자의 얼굴 이미지를 전달받아 퍼스널 컬러(예: 웜톤, 쿨톤 등)를 추론하고, 그 결과를 반환합니다.
+이 리포지토리는 **YOLOv12 모델을 FastAPI로 서빙**하여, Unity 애플리케이션과 통신하는 퍼스널 컬러 분석 백엔드 서버입니다. 사용자의 얼굴 이미지를 전달받아 퍼스널 컬러(예: 웜톤, 쿨톤 등)를 추론하고, 그 결과를 반환합니다.
 
 ---
 
@@ -12,7 +12,7 @@
 프로젝트는 다음 다섯 개의 주요 리포지토리로 구성되어 있습니다:
 
 ### 1. [WarmCoolYolo](https://github.com/anyoungjin20040106/WarmCoolYolo)
-- YOLOv11-CLS 기반 퍼스널 컬러 분류 모델
+- YOLOv12 기반 퍼스널 컬러 분류 모델
 - Roboflow를 통한 데이터셋 관리
 - 모델 학습 및 평가 파이프라인
 
@@ -140,4 +140,6 @@
 ## 🛠 사용 기술
 
 - ![FastAPI](https://img.shields.io/badge/-FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
+- ![Groq](https://img.shields.io/badge/-Groq-E64910?style=flat&logo=Groq&logoColor=white)
+- ![langchain](https://img.shields.io/badge/-langchain-1C3C3C?style=flat&logo=langchain&logoColor=white)
 - ![docker](https://img.shields.io/badge/-docker-2496ED?style=flat&logo=docker&logoColor=white)
