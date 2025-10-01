@@ -52,12 +52,12 @@ def post_user(user:User=Form(...)):
                 response["result"]="성별을 다시 입력해주세요"
                 return response
             except Exception as e:
-                response["result"]="Developer error : {e}"
+                response["result"]="개발자 오류 : {e}"
                 return response
             response["result"]="Sign up complete"
             return response
     except Exception as e:
-        response["result"]=f"Developer error : {e}"
+        response["result"]=f"개발자 오류 : {e}"
         return response
 
 @user.put("")

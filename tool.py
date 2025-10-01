@@ -4,7 +4,7 @@ import pandas as pd
 import psycopg2
 from dotenv import load_dotenv
 load_dotenv()
-from jose import JWTError
+from jose import JWTError,jwt
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.tools import DuckDuckGoSearchRun
