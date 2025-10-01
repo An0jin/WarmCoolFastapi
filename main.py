@@ -58,9 +58,9 @@ async def predict_image(img: UploadFile=File(...), token: str = Form(None)):
     result = results[0].boxes.cls
     
     if len(result) > 1:
-        return {"color_id": "Only one person can be test", "hex_code": "","description":""}
+        return {"color_id": "한사람만 테스트할수 있습니다", "hex_code": "","description":""}
     elif len(result) == 0:
-        return {"color_id": "Face not found", "hex_code": "","description":""}
+        return {"color_id": "얼굴을 찾을 수 없습니다", "hex_code": "","description":""}
     else:
         color_id=model.names[result[0].item()]
     with connect() as conn:

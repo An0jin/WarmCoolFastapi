@@ -36,8 +36,9 @@ def post_chat(chat:Chat=Form(...)):
 
 @user.post("")
 def post_user(user:User=Form(...)):
+    response={}
     try:
-        response={"token":JWT.encode(user.user_id)}
+        response["token"]=JWT.encode(user.user_id)
         with connect() as conn:
             cursor=conn.cursor()
             try:
@@ -45,10 +46,10 @@ def post_user(user:User=Form(...)):
                 cursor.execute('insert into "user"(user_id,pw,name,year,gender) values (%s,%s,%s,%s,%s)',var)
                 conn.commit()
             except errors.UniqueViolation:
-                response["result"]="Already exists"
+                response["result"]="이미 존재하는 아이디입니다"
                 return response
             except errors.CheckViolation:
-                response["result"]="Please enter a valid gender"
+                response["result"]="성별을 다시 입력해주세요"
                 return response
             except Exception as e:
                 response["result"]="Developer error : {e}"
