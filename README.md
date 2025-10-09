@@ -140,6 +140,5 @@
 ## 🛠 사용 기술
 
 - ![FastAPI](https://img.shields.io/badge/-FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
-- ![Groq](https://img.shields.io/badge/-Groq-E64910?style=flat&logo=Groq&logoColor=white)
-- ![langchain](https://img.shields.io/badge/-langchain-1C3C3C?style=flat&logo=langchain&logoColor=white)
+- ![Gemini](https://img.shields.io/badge/-gemini%20API-8E75B2?style=flat&logo=googlegemini&logoColor=white)
 - ![docker](https://img.shields.io/badge/-docker-2496ED?style=flat&logo=docker&logoColor=white)
