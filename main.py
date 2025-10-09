@@ -1,13 +1,11 @@
 from fastapi import FastAPI, UploadFile, HTTPException, Request,Form,File
-from fastapi.responses import JSONResponse,FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from PIL import Image
 from io import BytesIO
 from ultralytics import YOLO
 from fastapi.middleware.cors import CORSMiddleware
 from router import *
 import json
-import os
 import re
 from ultralytics import YOLO
 from tool import LipstickLLM
