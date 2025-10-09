@@ -52,11 +52,12 @@ async def login(login:Login=Form(...)):
 # 얼굴 이미지 업로드 → 퍼스널 컬러 예측
 @app.post('/predict')
 async def predict_image(img: UploadFile=File(...), token: str = Form(None)):
+    print("예측중")
     img_byte = await img.read()
-    img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
+    img_pil = Image.open(BytesIO(img_byte)).convert('RGB') 
     results = model.predict(img_pil, iou=0.1, agnostic_nms=True)
     result = results[0].boxes.cls
-    
+    print(result)
     if len(result) > 1:
         return {"color_id": "한사람만 테스트할수 있습니다", "hex_code": "","description":""}
     elif len(result) == 0:
@@ -93,8 +94,8 @@ async def llm(llm:LLM=Form(None)):
         load_dotenv()
         user_id=JWT.decode(llm.token)
         colors=list(map(lambda x:x[0],pd.read_sql('select hex_code from lipstick where color_id(select lipstick.color_id from "user" inner join lipstick on "user".hex_code=lipstick.hex_code where user_id=%s)',conn,params=[user_id,]).values))
-        llm=LipstickLLM()
-        response = llm.invoke(f"{colors} Among them, recommend lipstick colors that are suitable for the situation like {llm.msg} in hex code format like #000000 #ffffff")
+        lllm=LipstickLLM()
+        response = lllm.invoke(llm.msg,colors)
         patten="#[A-Fa-f\d]{6}"
         color=re.findall(patten,response)[0]
         if llm.user_id!=None:
