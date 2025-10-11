@@ -46,7 +46,7 @@ class JWT:
 
 
 class LipstickLLM:
-    def __init__(self,api_key):
+    def __init__(self):
         self.client = genai.Client(api_key=os.getenv("gemini"))
     def invoke(self,text,colors):
         result = self.client.models.generate_content(

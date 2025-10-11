@@ -91,14 +91,21 @@ async def llm(llm:LLM=Form(None)):
     with connect() as conn:
         load_dotenv()
         user_id=JWT.decode(llm.token)
-        colors=list(map(lambda x:x[0],pd.read_sql('select hex_code from lipstick where color_id(select lipstick.color_id from "user" inner join lipstick on "user".hex_code=lipstick.hex_code where user_id=%s)',conn,params=[user_id,]).values))
+        colors=list(map(lambda x:x[0],pd.read_sql('''
+        SELECT hex_code FROM lipstick 
+WHERE color_id = (
+    SELECT T1.color_id 
+    FROM "user" AS T0 
+    INNER JOIN lipstick AS T1 ON T0.hex_code = T1.hex_code 
+    WHERE T0.user_id = %s
+)''',conn,params=[user_id,]).values))
         lllm=LipstickLLM()
         response = lllm.invoke(llm.msg,colors)
         patten="#[A-Fa-f\d]{6}"
         color=re.findall(patten,response)[0]
-        if llm.user_id!=None:
+        if llm.token!=None:
             cursor=conn.cursor()
-            cursor.execute('update "user" set hex_code=%s where user_id=%s',(color,llm.user_id))
+            cursor.execute('update "user" set hex_code=%s where user_id=%s',(color,user_id))
             conn.commit()        
     return to_response(color)
 
