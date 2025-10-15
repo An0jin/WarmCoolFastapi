@@ -38,6 +38,10 @@ def post_chat(chat:Chat=Form(...)):
 def post_user(user:User=Form(...)):
     response={}
     try:
+        with connect() as conn:
+            version=pd.read_sql('select version from version where platform=%s',conn,params=(user.platform,))
+            if version['version'].values[0]!=user.version:             
+                return {"msg":'버전이 일치하지 않습니다','link':version['link'].values[0]}
         response["token"]=JWT.encode(user.user_id)
         with connect() as conn:
             cursor=conn.cursor()

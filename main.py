@@ -8,7 +8,7 @@ from router import *
 import json
 import re
 from ultralytics import YOLO
-from tool import LipstickLLM
+from tool import LipstickLLM,JWT,connect,to_response,hashpw
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
@@ -36,9 +36,11 @@ model=YOLO('best.pt')
 async def login(login:Login=Form(...)):
     try:
         with connect() as conn:
-            df=pd.read_sql('select user_id,name,year,gender, "user".hex_code, color.color_id, description from "user" left join lipstick on "user".hex_code=lipstick.hex_code left join color on color.color_id=lipstick.color_id where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw),))
+            version=pd.read_sql('select version from version where platform=%s',conn,params=(login.platform,))
+            if version['version'].values[0]!=login.version:             
+                return {"msg":'버전이 일치하지 않습니다','link':version['link'].values[0]}
             result=df.to_dict(orient="records")[0] if len(df)==1 else dict(zip(df.columns,[None]*len(df.columns)))
-            result['msg']="성공"if  len(df)==1 else 'check your id or password'
+            result['msg']="성공"if  len(df)==1 else '아이디와 암호를 확인해주세요'
             result['token']=JWT.encode(login.user_id)if  len(df)==1 else None
             return result
     except Exception as e:
