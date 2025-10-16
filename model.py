@@ -15,8 +15,6 @@ class User(BaseModel):
     name:str
     year:int
     gender:str
-    version:float
-    platform:str
     
 class Update(BaseModel):
     token:str
@@ -28,8 +26,7 @@ class Update(BaseModel):
 class Login(BaseModel):
     user_id:str
     pw:str
-    platform:str
-    version:float
+
 class Lipstick(BaseModel):
     token:Optional[str]=None
     hex_code:str
