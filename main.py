@@ -120,7 +120,7 @@ async def version(version:int):
 
 # ====================[  비밀번호 초기화 기능]====================
 @app.post('/email')
-async def version(email:str):
+async def version(email:str=Form(...)):
     new_pw=os.urandom(32).hex()[:6]
     with connect() as conn:
         df=pd.read_sql('select * from "user" where email=%s',conn,params=[hashpw(email)])
@@ -141,7 +141,7 @@ async def version(email:str):
         with smtplib.SMTP("smtp.gmail.com", 587) as conn: # 표준 포트 587 사용
             conn.starttls()
             conn.login(user=my_email, password=my_password)
-            conn.send_message(msg, from_addr=my_email, to_addrs=[email.email])
+            conn.send_message(msg, from_addr=my_email, to_addrs=[email])
             print("이메일 전송 성공: UTF-8 인코딩 처리 완료")
     except smtplib.SMTPAuthenticationError:
         print("오류: SMTP 인증 실패. G메일 2단계 인증 및 앱 비밀번호 사용 여부를 확인하세요.")

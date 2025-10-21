@@ -5,8 +5,6 @@ import psycopg2
 from dotenv import load_dotenv
 load_dotenv()
 from jose import JWTError,jwt
-import smtplib
-from email.mime.text import MIMEText
 
 
 def connect():
