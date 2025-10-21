@@ -13,14 +13,14 @@ class User(BaseModel):
     user_id:str
     pw:str
     name:str
-    year:int
+    email:str
     gender:str
     
 class Update(BaseModel):
     token:str
     pw:str
     name:str
-    year:int
+    email:str
     gender:str
 
 class Login(BaseModel):
@@ -30,3 +30,7 @@ class Login(BaseModel):
 class Lipstick(BaseModel):
     token:Optional[str]=None
     hex_code:str
+
+class Email(BaseModel):
+    user_id:str
+    email:str

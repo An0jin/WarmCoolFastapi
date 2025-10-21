@@ -5,6 +5,7 @@ from model import *
 import psycopg2.errors as errors
 from tool import JWT
 
+
 chat = APIRouter(tags=['chat'], prefix='/chat')
 user = APIRouter(tags=['user'], prefix='/user')
 
@@ -42,11 +43,11 @@ def post_user(user:User=Form(...)):
         with connect() as conn:
             cursor=conn.cursor()
             try:
-                var=user.user_id,hashpw(user.pw),user.name,user.year,user.gender
-                cursor.execute('insert into "user"(user_id,pw,name,year,gender) values (%s,%s,%s,%s,%s)',var)
+                var=user.user_id,hashpw(user.pw),user.name,hashpw(user.email),user.gender
+                cursor.execute('insert into "user"(user_id,pw,name,email,gender) values (%s,%s,%s,%s,%s)',var)
                 conn.commit()
             except errors.UniqueViolation:
-                response["result"]="이미 존재하는 아이디입니다"
+                response["result"]="이미 존재하는 아이디 혹은 이메일입니다"
                 return response
             except errors.CheckViolation:
                 response["result"]="성별을 다시 입력해주세요"
@@ -66,8 +67,8 @@ def put_user(update:Update):
         with connect()as conn:
             cursor=conn.cursor()
             try:
-                cursor.execute('UPDATE "user" SET pw=%s, name=%s, year=%s, gender=%s WHERE user_id=%s',
-                            (hashpw(update.pw), update.name, update.year, update.gender, JWT.decode(update.token)))
+                cursor.execute('UPDATE "user" SET pw=%s, name=%s, email=%s, gender=%s WHERE user_id=%s',
+                            (hashpw(update.pw), update.name, hashpw(update.email), update.gender, JWT.decode(update.token)))
                 conn.commit()
                 return to_response("Modified")
             except Exception as e:

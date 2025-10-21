@@ -5,6 +5,9 @@ import psycopg2
 from dotenv import load_dotenv
 load_dotenv()
 from jose import JWTError,jwt
+import smtplib
+from email.mime.text import MIMEText
+
 
 def connect():
     """데이터베이스에 접근하는 함수"""
