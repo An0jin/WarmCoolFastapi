@@ -120,7 +120,7 @@ async def version(version:int):
 
 # ====================[  비밀번호 초기화 기능]====================
 @app.post('/email')
-async def version(email:str=Form(...)):
+async def Email(email:str=Form(...)):
     new_pw=os.urandom(32).hex()[:6]
     with connect() as conn:
         df=pd.read_sql('select * from "user" where email=%s',conn,params=[hashpw(email)])
