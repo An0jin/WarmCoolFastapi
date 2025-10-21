@@ -36,9 +36,7 @@ model=YOLO('best.pt')
 async def login(login:Login=Form(...)):
     try:
         with connect() as conn:
-            version=pd.read_sql('select version from version where platform=%s',conn,params=(login.platform,))
-            if version['version'].values[0]!=login.version:             
-                return {"msg":'버전이 일치하지 않습니다','link':version['link'].values[0]}
+            df=pd.read_sql('select * from "user" where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw)))
             result=df.to_dict(orient="records")[0] if len(df)==1 else dict(zip(df.columns,[None]*len(df.columns)))
             result['msg']="성공"if  len(df)==1 else '아이디와 암호를 확인해주세요'
             result['token']=JWT.encode(login.user_id)if  len(df)==1 else None
