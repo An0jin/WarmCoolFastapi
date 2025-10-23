@@ -2,6 +2,7 @@
 !*.py
 !*.pt
 !*.md
+!.env
 !*.txt
 !.*
 !index.html

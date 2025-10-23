@@ -10,6 +10,8 @@ import re
 from ultralytics import YOLO
 from tool import LipstickLLM,JWT,connect,to_response,hashpw
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 
 # FastAPI 앱 인스턴스 생성
@@ -38,10 +40,11 @@ model=YOLO('best.pt')
 async def login(login:Login=Form(...)):
     try:
         with connect() as conn:
-            df=pd.read_sql('select * from "user" where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw)))
+            df=pd.read_sql('select * from "user" as U inner join lipstick as L on U.hex_code =L.hex_code  where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw)))
             result=df.to_dict(orient="records")[0] if len(df)==1 else dict(zip(df.columns,[None]*len(df.columns)))
             result['msg']="성공"if  len(df)==1 else '아이디와 암호를 확인해주세요'
             result['token']=JWT.encode(login.user_id)if  len(df)==1 else None
+            
             return result
     except Exception as e:
         return to_response(str(e))
