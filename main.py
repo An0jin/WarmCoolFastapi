@@ -122,7 +122,7 @@ async def version(version:int):
     return to_response(version==df['version'].values[0])
 
 # ====================[  비밀번호 초기화 기능]====================
-@app.post('/email')
+@app.put('/email')
 async def Email(email:str=Form(...)):
     new_pw=os.urandom(32).hex()[:6]
     with connect() as conn:
