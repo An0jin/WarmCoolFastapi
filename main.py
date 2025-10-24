@@ -122,15 +122,15 @@ async def version(version:int):
     return to_response(version==df['version'].values[0])
 
 # ====================[  비밀번호 초기화 기능]====================
-@app.put('/email')
-async def Email(email:Email):
+@app.post('/email')
+async def get_Pw(email:Email=Form(...)):
     print(f"email : {email.email}")
     new_pw=os.urandom(32).hex()[:6]
     with connect() as conn:
-        df=pd.read_sql('select * from "user" where email=%s',conn,params=[hashpw(email.email)])
-        user_id=df['user_id'].values[0]
+        df=pd.read_sql('select * from "user" where email=%s',conn,params=[email.email])
         if len(df)==0:
             return to_response("해당 이메일이 존재하지 않습니다")
+        user_id=df['user_id'].values[0]
         cursor=conn.cursor()
         cursor.execute('update "user" set pw=%s where user_id=%s',(hashpw(new_pw),user_id))
         conn.commit()

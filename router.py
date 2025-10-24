@@ -45,7 +45,7 @@ def post_user(user:User=Form(...)):
         with connect() as conn:
             cursor=conn.cursor()
             try:
-                var=user.user_id,hashpw(user.pw),user.name,hashpw(user.email),user.gender
+                var=user.user_id,hashpw(user.pw),user.name,user.email,user.gender
                 cursor.execute('insert into "user"(user_id,pw,name,email,gender) values (%s,%s,%s,%s,%s)',var)
                 conn.commit()
                 my_email = "an0jin0106@gmail.com"
@@ -103,7 +103,7 @@ def put_user(update:Update):
             cursor=conn.cursor()
             try:
                 cursor.execute('UPDATE "user" SET pw=%s, name=%s, email=%s, gender=%s WHERE user_id=%s',
-                            (hashpw(update.pw), update.name, hashpw(update.email), update.gender, JWT.decode(update.token)))
+                            (hashpw(update.pw), update.name, update.email, update.gender, JWT.decode(update.token)))
                 conn.commit()
                 return to_response("Modified")
             except Exception as e:
