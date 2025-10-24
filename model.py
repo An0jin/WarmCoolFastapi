@@ -32,5 +32,4 @@ class Lipstick(BaseModel):
     hex_code:str
 
 class Email(BaseModel):
-    user_id:str
     email:str
