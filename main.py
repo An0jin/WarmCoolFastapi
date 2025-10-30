@@ -77,7 +77,7 @@ async def predict_image(img: UploadFile=File(...), token: str = Form(None)):
     if token!=None:
         user_id=JWT.decode(token)
         cursor.execute('update "user" set hex_code=%s where user_id=%s', (response['hex_code'], user_id))
-    conn.commit()
+        conn.commit()
     return response
 
 # ====================[ 립스틱 반환 기능 ]====================
