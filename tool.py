@@ -5,7 +5,6 @@ import psycopg2
 from dotenv import load_dotenv
 load_dotenv()
 from jose import JWTError,jwt
-from google.generativeai import genai
 
 
 def connect():
