@@ -4,27 +4,24 @@ from typing import Optional
 class Chat(BaseModel):
     token:str
     msg:str
+    color_id:str
 
 class LLM(BaseModel):
     token:str
     msg:str
     
 class User(BaseModel):
-    user_id:str
     pw:str
     name:str
     email:str
-    gender:str
     
 class Update(BaseModel):
     token:str
     pw:str
     name:str
-    email:str
-    gender:str
 
 class Login(BaseModel):
-    user_id:str
+    email:str
     pw:str
 
 class Lipstick(BaseModel):

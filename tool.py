@@ -5,6 +5,7 @@ import psycopg2
 from dotenv import load_dotenv
 load_dotenv()
 from jose import JWTError,jwt
+from google.generativeai import genai
 
 
 def connect():
@@ -36,12 +37,12 @@ def hashpw(pw):
 
 class JWT:
     @staticmethod
-    def encode(user_id):
-        return jwt.encode({'user_id':user_id}, os.getenv("jwtSecret"), algorithm='HS256')
+    def encode(email):
+        return jwt.encode({'email':email}, os.getenv("jwtSecret"), algorithm='HS256')
     @staticmethod
     def decode(token):
         try:
-            return jwt.decode(token, os.getenv("jwtSecret"), algorithms=['HS256'])['user_id']
+            return jwt.decode(token, os.getenv("jwtSecret"), algorithms=['HS256'])['email']
         except:
             return None
 

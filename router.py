@@ -17,7 +17,7 @@ def get_chat(color: str):
         with connect() as conn:
             df=pd.read_sql('''SELECT chat.chat_id, "user".name, chat.msg
                                 FROM "user"
-                                INNER JOIN chat ON "user".user_id = chat.user_id
+                                INNER JOIN chat ON "user".email = chat.email
                                 INNER JOIN lipstick ON "user".hex_code = lipstick.hex_code
                                 INNER JOIN color ON lipstick.color_id = color.color_id
                                 WHERE color.color_id = %s
@@ -32,7 +32,8 @@ def post_chat(chat:Chat=Form(...)):
     try:
         with connect() as conn:
             cursor=conn.cursor()
-            cursor.execute("insert into chat(user_id,msg) values(%s,%s)",vars=[JWT.decode(chat.token),chat.msg])
+            cursor.execute("insert into chat(email,msg,color_id) values(%s,%s,%s)",vars=[JWT.decode(chat.token),chat.msg,chat.color_id])
+            conn.commit()
         return 
     except Exception as e:
         return to_response(str(e))
@@ -41,12 +42,12 @@ def post_chat(chat:Chat=Form(...)):
 def post_user(user:User=Form(...)):
     response={}
     try:
-        response["token"]=JWT.encode(user.user_id)
+        response["token"]=JWT.encode(user.email)
         with connect() as conn:
             cursor=conn.cursor()
             try:
-                var=user.user_id,hashpw(user.pw),user.name,user.email,user.gender
-                cursor.execute('insert into "user"(user_id,pw,name,email,gender) values (%s,%s,%s,%s,%s)',var)
+                var=user.email,hashpw(user.pw),user.name,user.email
+                cursor.execute('insert into "user"(email,pw,name,email) values (%s,%s,%s,%s)',var)
                 conn.commit()
                 my_email = "an0jin0106@gmail.com"
                 my_password = os.getenv("stmplibpw")
@@ -82,10 +83,7 @@ Toniverse 개발자 드림
                 except Exception as e:
                     print(f"오류 발생: {e}")
             except errors.UniqueViolation:
-                response["result"]="이미 존재하는 아이디 혹은 이메일입니다"
-                return response
-            except errors.CheckViolation:
-                response["result"]="성별을 다시 입력해주세요"
+                response["result"]="이미 존재하는 이메일입니다"
                 return response
             except Exception as e:
                 response["result"]="개발자 오류 : {e}"
@@ -102,8 +100,8 @@ def put_user(update:Update):
         with connect()as conn:
             cursor=conn.cursor()
             try:
-                cursor.execute('UPDATE "user" SET pw=%s, name=%s, email=%s, gender=%s WHERE user_id=%s',
-                            (hashpw(update.pw), update.name, update.email, update.gender, JWT.decode(update.token)))
+                cursor.execute('UPDATE "user" SET pw=%s, name=%s WHERE email=%s',
+                            (hashpw(update.pw), update.name,  JWT.decode(update.token)))
                 conn.commit()
                 return to_response("Modified")
             except Exception as e:
@@ -114,11 +112,11 @@ def put_user(update:Update):
 @user.put("/lipstick")
 def put_user_lipstick(lipstick:Lipstick):
     try:
-        user_id=JWT.decode(lipstick.token)
+        email=JWT.decode(lipstick.token)
         with connect()as conn:
             cursor=conn.cursor()
             try:
-                cursor.execute('update "user" set hex_code=%s where user_id=%s',(lipstick.hex_code,user_id))
+                cursor.execute('update "user" set hex_code=%s where email=%s',(lipstick.hex_code,email))
                 conn.commit()
                 return to_response("Modified")
             except Exception as e:
@@ -128,14 +126,14 @@ def put_user_lipstick(lipstick:Lipstick):
 
 
 @user.delete("/{token}")
-def delete_user():
+def delete_user(token:str):
     try:
-        user_id=JWT.decode(token)
+        email=JWT.decode(token)
         with connect()as conn:
             cursor=conn.cursor()
             try:
-                cursor.execute('delete  from chat where user_id=%s; delete  from "user" where user_id=%s;',
-                               (user_id, user_id))
+                cursor.execute('delete  from chat where email=%s; delete  from "user" where email=%s;',
+                               (email, email))
                 conn.commit()
                 result="Deleted" if cursor.rowcount>0 else "Does not exist"
                 return to_response(result)

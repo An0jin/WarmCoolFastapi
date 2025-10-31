@@ -40,10 +40,10 @@ model=YOLO('best.pt')
 async def login(login:Login=Form(...)):
     try:
         with connect() as conn:
-            df=pd.read_sql('select * from "user" as U inner join lipstick as L on U.hex_code =L.hex_code  where user_id=%s and pw=%s',conn,params=(login.user_id,hashpw(login.pw)))
+            df=pd.read_sql('select * from "user" as U inner join lipstick as L on U.hex_code =L.hex_code  where email=%s and pw=%s',conn,params=(login.email,hashpw(login.pw)))
             result=df.to_dict(orient="records")[0] if len(df)==1 else dict(zip(df.columns,[None]*len(df.columns)))
-            result['msg']="성공"if  len(df)==1 else '아이디와 암호를 확인해주세요'
-            result['token']=JWT.encode(login.user_id)if  len(df)==1 else None
+            result['msg']="성공"if  len(df)==1 else '이메일과 암호를 확인해주세요'
+            result['token']=JWT.encode(login.email)if  len(df)==1 else None
             
             return result
     except Exception as e:
@@ -73,10 +73,9 @@ async def predict_image(img: UploadFile=File(...), token: str = Form(None)):
         # DataFrame을 JSON 문자열로 변환 후 파싱
         df_json = df.to_json(orient="records")
     response = json.loads(df_json)[0]
-    # user_id 변수 사용 (id 대신)
     if token!=None:
-        user_id=JWT.decode(token)
-        cursor.execute('update "user" set hex_code=%s where user_id=%s', (response['hex_code'], user_id))
+        email=JWT.decode(token)
+        cursor.execute('update "user" set hex_code=%s where email=%s', (response['hex_code'], email))
         conn.commit()
     return response
 
@@ -95,22 +94,22 @@ async def lipstick(color:str):
 async def llm(llm:LLM=Form(None)):
     with connect() as conn:
         load_dotenv()
-        user_id=JWT.decode(llm.token)
+        email=JWT.decode(llm.token)
         colors=list(map(lambda x:x[0],pd.read_sql('''
         SELECT hex_code FROM lipstick 
 WHERE color_id = (
     SELECT T1.color_id 
     FROM "user" AS T0 
     INNER JOIN lipstick AS T1 ON T0.hex_code = T1.hex_code 
-    WHERE T0.user_id = %s
-)''',conn,params=[user_id,]).values))
+    WHERE T0.email = %s
+)''',conn,params=[email,]).values))
         lllm=LipstickLLM()
         response = lllm.invoke(llm.msg,colors)
         patten="#[A-Fa-f\d]{6}"
         color=re.findall(patten,response)[0]
         if llm.token!=None:
             cursor=conn.cursor()
-            cursor.execute('update "user" set hex_code=%s where user_id=%s',(color,user_id))
+            cursor.execute('update "user" set hex_code=%s where email=%s',(color,email))
             conn.commit()        
     return to_response(color)
 
@@ -130,14 +129,14 @@ async def get_Pw(email:Email=Form(...)):
         df=pd.read_sql('select * from "user" where email=%s',conn,params=[email.email])
         if len(df)==0:
             return to_response("해당 이메일이 존재하지 않습니다")
-        user_id=df['user_id'].values[0]
+        email=df['email'].values[0]
         cursor=conn.cursor()
-        cursor.execute('update "user" set pw=%s where user_id=%s',(hashpw(new_pw),user_id))
+        cursor.execute('update "user" set pw=%s where email=%s',(hashpw(new_pw),email))
         conn.commit()
     my_email = "an0jin0106@gmail.com"
     my_password = os.getenv("stmplibpw")
     subject = "Toniverse 비밀번호 초기화 관련"
-    body = f"당신의 아이디는 {user_id}이고 당신의 비밀번호는 {new_pw}으로 초기화 했습니다"
+    body = f"당신의 비밀번호는 {new_pw}으로 초기화 했습니다"
     msg = MIMEText(body, 'plain', 'utf-8')
     msg['Subject'] = subject
     msg['From'] = my_email
