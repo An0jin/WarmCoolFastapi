@@ -11,6 +11,16 @@ from email.mime.text import MIMEText
 chat = APIRouter(tags=['chat'], prefix='/chat')
 user = APIRouter(tags=['user'], prefix='/user')
 
+@user.get("/{token}")
+def get_user(token: str):
+    try:
+        email=JWT.decode(token)
+        with connect() as conn:
+            df=pd.read_sql('select * from "user" as U inner join lipstick as L on U.hex_code =L.hex_code  where U.email=%s',conn,params=[email,])
+        df['token']=token
+        return to_response(df)
+    except Exception as e:
+        return to_response(str(e))
 @chat.get("/{color}")
 def get_chat(color: str):
     try:
@@ -46,8 +56,8 @@ def post_user(user:User=Form(...)):
         with connect() as conn:
             cursor=conn.cursor()
             try:
-                var=user.email,hashpw(user.pw),user.name,user.email
-                cursor.execute('insert into "user"(email,pw,name,email) values (%s,%s,%s,%s)',var)
+                var=user.email,hashpw(user.pw),user.name
+                cursor.execute('insert into "user"(email,pw,name) values (%s,%s,%s)',var)
                 conn.commit()
                 my_email = "an0jin0106@gmail.com"
                 my_password = os.getenv("stmplibpw")
@@ -73,10 +83,10 @@ Toniverse 개발자 드림
                 msg['Subject'] = subject
                 msg['From'] = my_email
                 try:
-                    with smtplib.SMTP("smtp.gmail.com", 587) as conn: # 표준 포트 587 사용
-                        conn.starttls()
-                        conn.login(user=my_email, password=my_password)
-                        conn.send_message(msg, from_addr=my_email, to_addrs=[user.email])
+                    with smtplib.SMTP("smtp.gmail.com", 587) as econn: # 표준 포트 587 사용
+                        econn.starttls()
+                        econn.login(user=my_email, password=my_password)
+                        econn.send_message(msg, from_addr=my_email, to_addrs=[user.email])
                         print("이메일 전송 성공: UTF-8 인코딩 처리 완료")
                 except smtplib.SMTPAuthenticationError:
                     print("오류: SMTP 인증 실패. G메일 2단계 인증 및 앱 비밀번호 사용 여부를 확인하세요.")

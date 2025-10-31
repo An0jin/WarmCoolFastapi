@@ -44,7 +44,6 @@ async def login(login:Login=Form(...)):
             result=df.to_dict(orient="records")[0] if len(df)==1 else dict(zip(df.columns,[None]*len(df.columns)))
             result['msg']="성공"if  len(df)==1 else '이메일과 암호를 확인해주세요'
             result['token']=JWT.encode(login.email)if  len(df)==1 else None
-            
             return result
     except Exception as e:
         return to_response(str(e))
@@ -129,9 +128,8 @@ async def get_Pw(email:Email=Form(...)):
         df=pd.read_sql('select * from "user" where email=%s',conn,params=[email.email])
         if len(df)==0:
             return to_response("해당 이메일이 존재하지 않습니다")
-        email=df['email'].values[0]
         cursor=conn.cursor()
-        cursor.execute('update "user" set pw=%s where email=%s',(hashpw(new_pw),email))
+        cursor.execute('update "user" set pw=%s where email=%s',(hashpw(new_pw),email.email))
         conn.commit()
     my_email = "an0jin0106@gmail.com"
     my_password = os.getenv("stmplibpw")
@@ -144,7 +142,7 @@ async def get_Pw(email:Email=Form(...)):
         with smtplib.SMTP("smtp.gmail.com", 587) as conn: # 표준 포트 587 사용
             conn.starttls()
             conn.login(user=my_email, password=my_password)
-            conn.send_message(msg, from_addr=my_email, to_addrs=[email])
+            conn.send_message(msg, from_addr=my_email, to_addrs=[email.email])
             print("이메일 전송 성공: UTF-8 인코딩 처리 완료")
     except smtplib.SMTPAuthenticationError:
         print("오류: SMTP 인증 실패. G메일 2단계 인증 및 앱 비밀번호 사용 여부를 확인하세요.")

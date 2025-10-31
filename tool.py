@@ -27,12 +27,10 @@ def to_response(x):
 
 
 def hashpw(pw):
-    """패스워드를 해싱하는 함수"""
-    c = ord(pw[-1])
-    for i in range(c % 5):
-        func = hashlib.blake2b if bool(i % 2) else hashlib.sha256
-        pw = func(pw.encode()).hexdigest()
-    return pw
+    """
+    패스워드를 해싱합니다.
+    """
+    return hashlib.sha256(pw.encode()).hexdigest()
 
 class JWT:
     @staticmethod
