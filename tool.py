@@ -5,6 +5,8 @@ import psycopg2
 from dotenv import load_dotenv
 load_dotenv()
 from jose import JWTError,jwt
+from email.mime.text import MIMEText
+import smtplib
 
 
 def connect():
@@ -55,3 +57,21 @@ class LipstickLLM:
         "system_instruction":f"You're given a situation where you must choose a lipstick color from {colors}. Please respond with a color code, such as #ffffff, and avoid any other answers. Furthermore, if the answer isn't readily available (e.g., 'What lipstick color would be appropriate for an idol concert'), you must use the web search function."}
         )
         return result.text
+
+def SendEmail(email,body):
+    my_email = "an0jin0106@gmail.com"
+    my_password = os.getenv("stmplibpw")
+    subject = "Toniverse 비밀번호 초기화 관련"
+    msg = MIMEText(body, 'plain', 'utf-8')
+    msg['Subject'] = subject
+    msg['From'] = my_email
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as conn: # 표준 포트 587 사용
+            conn.starttls()
+            conn.login(user=my_email, password=my_password)
+            conn.send_message(msg, from_addr=my_email, to_addrs=[email])
+            print("이메일 전송 성공: UTF-8 인코딩 처리 완료")
+    except smtplib.SMTPAuthenticationError:
+        print("오류: SMTP 인증 실패. G메일 2단계 인증 및 앱 비밀번호 사용 여부를 확인하세요.")
+    except Exception as e:
+        print(f"오류 발생: {e}")

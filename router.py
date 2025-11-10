@@ -3,9 +3,7 @@ from tool import *
 import pandas as pd
 from model import *
 import psycopg2.errors as errors
-from tool import JWT
-import smtplib
-from email.mime.text import MIMEText
+from tool import JWT, SendEmail
 
 
 chat = APIRouter(tags=['chat'], prefix='/chat')
@@ -15,10 +13,12 @@ user = APIRouter(tags=['user'], prefix='/user')
 def get_user(token: str):
     try:
         email=JWT.decode(token)
+        print("이메일 : ",email)
         with connect() as conn:
-            df=pd.read_sql('select * from "user" as U inner join lipstick as L on U.hex_code =L.hex_code  where U.email=%s',conn,params=[email,])
+            df=pd.read_sql('select * from "user" left join lipstick on "user".hex_code =lipstick.hex_code where email=%s',conn,params=[email,])
+        print("df : ",df)
         df['token']=token
-        return to_response(df)
+        return df.to_dict(orient="records")[0]
     except Exception as e:
         return to_response(str(e))
 @chat.get("/{color}")
@@ -59,10 +59,8 @@ def post_user(user:User=Form(...)):
                 var=user.email,hashpw(user.pw),user.name
                 cursor.execute('insert into "user"(email,pw,name) values (%s,%s,%s)',var)
                 conn.commit()
-                my_email = "an0jin0106@gmail.com"
-                my_password = os.getenv("stmplibpw")
-                subject = "Toniverse에 오신걸 환영합니다"
-                body ='''안녕하세요, Toniverse에 오신 것을 진심으로 환영합니다!
+                
+                SendEmail(user.email,'''안녕하세요, Toniverse에 오신 것을 진심으로 환영합니다!
 
 당신만의 퍼스널컬러와 상황에 맞는 AI 기반 가상 메이크업 서비스를 이제 직접 경험하실 수 있습니다.
 
@@ -78,20 +76,7 @@ Toniverse는 최신 AI와 AR 기술을 활용해,
 함께 Toniverse를 만들어가요!
 
 Toniverse 개발자 드림
-                '''
-                msg = MIMEText(body, 'plain', 'utf-8')
-                msg['Subject'] = subject
-                msg['From'] = my_email
-                try:
-                    with smtplib.SMTP("smtp.gmail.com", 587) as econn: # 표준 포트 587 사용
-                        econn.starttls()
-                        econn.login(user=my_email, password=my_password)
-                        econn.send_message(msg, from_addr=my_email, to_addrs=[user.email])
-                        print("이메일 전송 성공: UTF-8 인코딩 처리 완료")
-                except smtplib.SMTPAuthenticationError:
-                    print("오류: SMTP 인증 실패. G메일 2단계 인증 및 앱 비밀번호 사용 여부를 확인하세요.")
-                except Exception as e:
-                    print(f"오류 발생: {e}")
+                ''')
             except errors.UniqueViolation:
                 response["result"]="이미 존재하는 이메일입니다"
                 return response

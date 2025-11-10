@@ -8,7 +8,7 @@ from router import *
 import json
 import re
 from ultralytics import YOLO
-from tool import LipstickLLM,JWT,connect,to_response,hashpw
+from tool import LipstickLLM,JWT,connect,to_response,hashpw, SendEmail
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -40,7 +40,7 @@ model=YOLO('best.pt')
 async def login(login:Login=Form(...)):
     try:
         with connect() as conn:
-            df=pd.read_sql('select * from "user" as U inner join lipstick as L on U.hex_code =L.hex_code  where email=%s and pw=%s',conn,params=(login.email,hashpw(login.pw)))
+            df=pd.read_sql('select * from "user" as U left join lipstick as L on U.hex_code =L.hex_code  where U.email=%s and U.pw=%s',conn,params=(login.email,hashpw(login.pw)))
             result=df.to_dict(orient="records")[0] if len(df)==1 else dict(zip(df.columns,[None]*len(df.columns)))
             result['msg']="성공"if  len(df)==1 else '이메일과 암호를 확인해주세요'
             result['token']=JWT.encode(login.email)if  len(df)==1 else None
@@ -131,25 +131,13 @@ async def get_Pw(email:Email=Form(...)):
         cursor=conn.cursor()
         cursor.execute('update "user" set pw=%s where email=%s',(hashpw(new_pw),email.email))
         conn.commit()
-    my_email = "an0jin0106@gmail.com"
-    my_password = os.getenv("stmplibpw")
-    subject = "Toniverse 비밀번호 초기화 관련"
-    body = f"당신의 비밀번호는 {new_pw}으로 초기화 했습니다"
-    msg = MIMEText(body, 'plain', 'utf-8')
-    msg['Subject'] = subject
-    msg['From'] = my_email
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as conn: # 표준 포트 587 사용
-            conn.starttls()
-            conn.login(user=my_email, password=my_password)
-            conn.send_message(msg, from_addr=my_email, to_addrs=[email.email])
-            print("이메일 전송 성공: UTF-8 인코딩 처리 완료")
-    except smtplib.SMTPAuthenticationError:
-        print("오류: SMTP 인증 실패. G메일 2단계 인증 및 앱 비밀번호 사용 여부를 확인하세요.")
-    except Exception as e:
-        print(f"오류 발생: {e}")
+    SendEmail(email.email,f"당신의 비밀번호는 {new_pw}으로 초기화 했습니다")
     return to_response("메일을 확인해주세요")
 
+@app.post('/getNum')
+async def getNum(email:str=Form(...),num:str=Form(...)):
+    SendEmail(email,f"인증번호 : {num}")
+    return to_response("메일을 확인해주세요")
 
 
 # ====================[ 예외 처리 ]====================
