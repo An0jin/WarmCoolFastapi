@@ -11,8 +11,11 @@ from ultralytics import YOLO
 from tool import LipstickLLM,JWT,connect,to_response,hashpw, SendEmail
 import os
 from dotenv import load_dotenv
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 load_dotenv()
 
+executor = ThreadPoolExecutor(max_workers=(os.cpu_count() or 4))
 
 # FastAPI 앱 인스턴스 생성
 app = FastAPI(
@@ -56,10 +59,12 @@ async def login(login:Login=Form(...)):
 async def predict_image(img: UploadFile=File(...), token: str = Form(None)):
     print("예측중")
     img_byte = await img.read()
-    img_pil = Image.open(BytesIO(img_byte)).convert('RGB') 
-    results = model.predict(img_pil, iou=0.1, agnostic_nms=True)
-    result = results[0].boxes.cls
-    print(result)
+    loop = asyncio.get_event_loop()
+    def predict(img_byte):
+        img_pil = Image.open(BytesIO(img_byte)).convert('RGB') 
+        results = model.predict(img_pil, iou=0.1, agnostic_nms=True)
+        return results[0].boxes.cls
+    result=loop.run_in_executor(executor,predict,img_byte)
     if len(result) > 1:
         return {"color_id": "한사람만 테스트할수 있습니다", "hex_code": "","description":""}
     elif len(result) == 0:
@@ -103,7 +108,7 @@ WHERE color_id = (
     WHERE T0.email = %s
 )''',conn,params=[email,]).values))
         lllm=LipstickLLM()
-        response = lllm.invoke(llm.msg,colors)
+        response = await lllm.invoke(llm.msg,colors)
         patten="#[A-Fa-f\d]{6}"
         color=re.findall(patten,response)[0]
         if llm.token!=None:
