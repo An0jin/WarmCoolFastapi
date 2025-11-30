@@ -7,7 +7,7 @@ load_dotenv()
 from jose import JWTError,jwt
 from email.mime.text import MIMEText
 import smtplib
-from google import genai
+import google.generativeai as genai
 
 
 def connect():
