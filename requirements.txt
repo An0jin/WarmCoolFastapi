@@ -29,6 +29,7 @@ google-api-core==2.26.0
 google-api-python-client==2.184.0
 google-auth==2.41.1
 google-auth-httplib2==0.2.0
+google-genai==1.52.0
 google-generativeai==0.8.5
 googleapis-common-protos==1.70.0
 greenlet==3.2.4
@@ -47,10 +48,6 @@ joblib==1.5.0
 jsonpatch==1.33
 jsonpointer==3.0.0
 kiwisolver==1.4.8
-langchain-community==0.3.30
-langchain-core==0.3.76
-langchain-groq==0.3.8
-langchain-text-splitters==0.3.11
 langsmith==0.4.31
 loguru==0.7.3
 lxml==6.0.2

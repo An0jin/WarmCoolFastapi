@@ -7,7 +7,7 @@ load_dotenv()
 from jose import JWTError,jwt
 from email.mime.text import MIMEText
 import smtplib
-import google.generativeai as genai
+from google import genai
 
 
 def connect():
@@ -50,8 +50,9 @@ class JWT:
 class LipstickLLM:
     def __init__(self):
         self.client = genai.Client(api_key=os.getenv("gemini"))
-    async def invoke(self,text,colors):
-        result = await self.client.models.generate_content(
+        
+    def invoke(self,text,colors):
+        result = self.client.models.generate_content(
         model="gemini-2.5-flash",
         contents=text,
         config={"tools": [{"google_search": {}}],
