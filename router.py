@@ -60,7 +60,7 @@ def post_user(user:User=Form(...)):
                 cursor.execute('insert into "user"(email,pw,name) values (%s,%s,%s)',var)
                 conn.commit()
                 
-                SendEmail(user.email,'''안녕하세요, Toniverse에 오신 것을 진심으로 환영합니다!
+                SendEmail(user.email,'Toniverse에 오신 것을 환영합니다','''안녕하세요, Toniverse에 오신 것을 진심으로 환영합니다!
 
 당신만의 퍼스널컬러와 상황에 맞는 AI 기반 가상 메이크업 서비스를 이제 직접 경험하실 수 있습니다.
 
@@ -113,9 +113,9 @@ def put_user_lipstick(lipstick:Lipstick):
             try:
                 cursor.execute('update "user" set hex_code=%s where email=%s',(lipstick.hex_code,email))
                 conn.commit()
-                return to_response("Modified")
+                return to_response("수정 완료")
             except Exception as e:
-                return to_response(f"Error : {e}")
+                return to_response(f"서버문제")
     except Exception as e:
         return to_response(str(e))
 

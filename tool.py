@@ -7,6 +7,7 @@ load_dotenv()
 from jose import JWTError,jwt
 from email.mime.text import MIMEText
 import smtplib
+from google import genai
 
 
 def connect():
@@ -58,10 +59,9 @@ class LipstickLLM:
         )
         return result.text
 
-def SendEmail(email,body):
+def SendEmail(email,subject,body):
     my_email = "an0jin0106@gmail.com"
     my_password = os.getenv("stmplibpw")
-    subject = "Toniverse 비밀번호 초기화 관련"
     msg = MIMEText(body, 'plain', 'utf-8')
     msg['Subject'] = subject
     msg['From'] = my_email
