@@ -56,7 +56,7 @@
 #### 📍 POST `/chat/`
 
 - **설명**: DB에 채팅 내용을 업로드 합니다
-- **요청 방식**: `application/x-www-form-urlencoded`
+- **요청 방식**: `​multipart/form-data`
 - **요청 필드**
   - `user_id` : 유저의 아이디
   - `msg` : 메세지
@@ -75,7 +75,7 @@
 #### 📍 POST `/user/`
 
 - **설명**: DB에 유저를 추가 합니다
-- **요청 방식**: `application/x-www-form-urlencoded`
+- **요청 방식**: `​multipart/form-data`
 - **요청 필드**
   - `user_id` : 유저의 아이디
   - `pw` : 비밀번호
@@ -145,10 +145,10 @@
   - `version`: 클라이언트 버전 번호
 - **응답**: 버전 일치 여부 (boolean)
 
-#### 📍 PUT `/email`
+#### 📍 POST `/email`
 
 - **설명**: 비밀번호를 초기화하고 새 비밀번호를 이메일로 전송합니다.
-- **요청 방식**: `application/x-www-form-urlencoded`
+- **요청 방식**: `multipart/form-data`
 - **요청 필드**
   - `email`: 가입된 이메일 주소
 - **응답**: 처리 상태 메시지
