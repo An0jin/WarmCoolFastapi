@@ -65,15 +65,15 @@ def sync_processor(img_byte: bytes, token: str):
 
     # 2. 예측 결과 로직 (동일)
     if len(result_cls) > 1:
-        return {"color_id": "한사람만 테스트할수 있습니다", "hex_code": "", "description": ""}
+        return {"color_id": "한사람만 테스트할수 있습니다", "hex_code": "", "cname": ""}
     elif len(result_cls) == 0:
-        return {"color_id": "얼굴을 찾을 수 없습니다", "hex_code": "", "description": ""}
+        return {"color_id": "얼굴을 찾을 수 없습니다", "hex_code": "", "cname": ""}
     
     color_id=model.names[result_cls[0].item()]
     
     with connect() as conn:
         df = pd.read_sql(
-            'SELECT c.color_id, l.hex_code, c.description FROM lipstick l INNER JOIN color c ON l.color_id=c.color_id WHERE l.color_id=%s', 
+            'SELECT c.color_id, l.hex_code, l.cname FROM lipstick l INNER JOIN color c ON l.color_id=c.color_id WHERE l.color_id=%s', 
             conn, 
             params=(color_id,)
         )
@@ -140,9 +140,10 @@ async def predict_image(img: UploadFile=File(...), token: str = Form(None)):
 @app.get('/lipstick/{color}')
 async def lipstick(color:str):
     with connect() as conn:
-        df=pd.read_sql('select * from lipstick where color_id=%s',conn,params=[color,])
-        print(f"결과 : {to_response(df['hex_code'].values)}")
-    return to_response(df['hex_code'].values)
+        print(f"명령어 : select hex_code,cname from lipstick where color_id=%s")
+        df=pd.read_sql('select hex_code,cname from lipstick where color_id=%s',conn,params=[color,])
+        print(f"결과 : {to_response(df.to_dict(orient='records'))}")
+    return to_response(df.to_dict(orient='records'))
 
 # ====================[ AI 챗봇 기능 ]====================
 @app.post('/llm')
@@ -165,8 +166,9 @@ WHERE color_id = (
         if llm.token!=None:
             cursor=conn.cursor()
             cursor.execute('update "user" set hex_code=%s where email=%s',(color,email))
-            conn.commit()        
-    return to_response(color)
+            conn.commit()     
+        result=pd.read_sql('SELECT hex_code,cname FROM lipstick WHERE hex_code = %s',conn,params=[color,])
+    return to_response(result)
 
 # ====================[ 버전 체크 기능]====================
 @app.get('/version/{version}')
