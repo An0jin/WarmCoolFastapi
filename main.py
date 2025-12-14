@@ -42,7 +42,7 @@ model=YOLO('best.pt')
 async def login(login:Login=Form(...)):
     try:
         with connect() as conn:
-            df=pd.read_sql('select * from "user" as U left join lipstick as L on U.hex_code =L.hex_code  where U.email=%s and U.pw=%s',conn,params=(login.email,hashpw(login.pw)))
+            login.email=login.email.lower()
             result=df.to_dict(orient="records")[0] if len(df)==1 else dict(zip(df.columns,[None]*len(df.columns)))
             result['msg']="성공"if  len(df)==1 else '이메일과 암호를 확인해주세요'
             result['token']=JWT.encode(login.email)if  len(df)==1 else None
@@ -62,7 +62,7 @@ def sync_processor(img_byte: bytes, token: str):
     img_pil = Image.open(BytesIO(img_byte)).convert('RGB') 
     results = model.predict(img_pil, iou=0.1, agnostic_nms=True)
     result_cls = results[0].boxes.cls
-
+    print(f"결과 : {result_cls}")
     # 2. 예측 결과 로직 (동일)
     if len(result_cls) > 1:
         return {"color_id": "한사람만 테스트할수 있습니다", "hex_code": "", "cname": ""}
@@ -77,10 +77,6 @@ def sync_processor(img_byte: bytes, token: str):
             conn, 
             params=(color_id,)
         )
-        
-        # 조회 결과 처리
-        if df.empty:
-            raise ValueError("DB에서 해당 color_id 정보를 찾을 수 없습니다.")
 
         # DataFrame을 JSON 문자열로 변환 후 파싱
         df_json = df.to_json(orient="records")
@@ -160,6 +156,7 @@ WHERE color_id = (
     WHERE T0.email = %s
 )''',conn,params=[email,]).values))
         lllm=LipstickLLM()
+        
         response = lllm.invoke(llm.msg,colors)
         patten="#[A-Fa-f\d]{6}"
         color=re.findall(patten,response)[0]
@@ -167,8 +164,10 @@ WHERE color_id = (
             cursor=conn.cursor()
             cursor.execute('update "user" set hex_code=%s where email=%s',(color,email))
             conn.commit()     
+        print(f"color : {color}")
         result=pd.read_sql('SELECT hex_code,cname FROM lipstick WHERE hex_code = %s',conn,params=[color,])
-    return to_response(result)
+        print(result.to_dict(orient="records"))
+    return result.to_dict(orient="records")[0]
 
 # ====================[ 버전 체크 기능]====================
 @app.get('/version/{version}')

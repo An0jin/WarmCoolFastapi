@@ -52,6 +52,7 @@ def post_chat(chat:Chat=Form(...)):
 def post_user(user:User=Form(...)):
     response={}
     try:
+        user.email=user.email.lower()
         response["token"]=JWT.encode(user.email)
         with connect() as conn:
             cursor=conn.cursor()
@@ -81,9 +82,9 @@ Toniverse 개발자 드림
                 response["result"]="이미 존재하는 이메일입니다"
                 return response
             except Exception as e:
-                response["result"]="개발자 오류 : {e}"
+                response["result"]=f"개발자 오류 : {e}"
                 return response
-            response["result"]="Sign up complete"
+            response["result"]=""
             return response
     except Exception as e:
         response["result"]=f"개발자 오류 : {e}"
@@ -98,7 +99,7 @@ def put_user(update:Update):
                 cursor.execute('UPDATE "user" SET pw=%s, name=%s WHERE email=%s',
                             (hashpw(update.pw), update.name,  JWT.decode(update.token)))
                 conn.commit()
-                return to_response("Modified")
+                return to_response("수정 완료")
             except Exception as e:
                 return to_response(f"Error : {e}")
     except Exception as e:
@@ -130,7 +131,7 @@ def delete_user(token:str):
                 cursor.execute('delete  from chat where email=%s; delete  from "user" where email=%s;',
                                (email, email))
                 conn.commit()
-                result="Deleted" if cursor.rowcount>0 else "Does not exist"
+                result="" if cursor.rowcount>0 else "존재하지 않는 이메일입니다"
                 return to_response(result)
             except Exception as e: 
                 return to_response(f"Error : {e}")
