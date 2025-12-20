@@ -61,7 +61,7 @@ def sync_processor(img_byte: bytes, token: str):
     
     # 1. 모델 추론 (CPU-bound)
     img_pil = Image.open(BytesIO(img_byte)).convert('RGB') 
-    results = model.predict(img_pil, iou=0.1, agnostic_nms=True)
+    results = model.predict(img_pil, iou=0.1, agnostic_nms=True,imgsz=512)
     result_cls = results[0].boxes.cls
     print(f"결과 : {result_cls}")
     # 2. 예측 결과 로직 (동일)
