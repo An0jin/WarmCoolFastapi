@@ -1,6 +1,7 @@
 *
 !*.py
 !*.pt
+!*.onnx
 !*.md
 !.env
 !*.txt

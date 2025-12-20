@@ -3,6 +3,7 @@
 !*.pt
 !*.md
 !*.txt
+!*.onnx
 !.*
 .env
 !Dockerfile

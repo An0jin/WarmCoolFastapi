@@ -28,7 +28,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
-model=YOLO('best.pt')
+model=YOLO('best.onnx')
 # ====================[ 테스트용 ]====================
 
 # @app.get('/')
