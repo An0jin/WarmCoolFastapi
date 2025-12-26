@@ -25,7 +25,7 @@ class Login(BaseModel):
     pw:str
 
 class Lipstick(BaseModel):
-    token:Optional[str]=None
+    token:str
     hex_code:str
 
 class Email(BaseModel):

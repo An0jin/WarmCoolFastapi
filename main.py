@@ -83,23 +83,21 @@ def sync_processor(img_byte: bytes, token: str):
         df_json = df.to_json(orient="records")
         response = json.loads(df_json)[0]
 
-        # 4. 토큰 처리 및 DB 업데이트
-        if token:
-            try:
-                email = JWT.decode(token)
-                if not email:
-                    print("WARN: JWT 디코딩 성공, 그러나 이메일 정보 없음")
-                else:
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        'UPDATE "user" SET hex_code=%s WHERE email=%s', 
-                        (response['hex_code'], email)
-                    )
-                    conn.commit()
-            except jwt.InvalidTokenError:
-                print("WARN: 유효하지 않은 토큰입니다. DB 업데이트 생략.")
-            except Exception as e:
-                print(f"ERROR: DB 업데이트 중 예외 발생: {e}")
+        try:
+            email = JWT.decode(token)
+            if not email:
+                print("WARN: JWT 디코딩 성공, 그러나 이메일 정보 없음")
+            else:
+                cursor = conn.cursor()
+                cursor.execute(
+                    'UPDATE "user" SET hex_code=%s WHERE email=%s', 
+                    (response['hex_code'], email)
+                )
+                conn.commit()
+        except jwt.InvalidTokenError:
+            print("WARN: 유효하지 않은 토큰입니다. DB 업데이트 생략.")
+        except Exception as e:
+            print(f"ERROR: DB 업데이트 중 예외 발생: {e}")
 
     return response
 
