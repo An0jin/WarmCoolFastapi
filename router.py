@@ -15,7 +15,7 @@ def get_user(token: str):
         email=JWT.decode(token)
         print("이메일 : ",email)
         with connect() as conn:
-            df=pd.read_sql('select * from "user" left join lipstick on "user".hex_code =lipstick.hex_code where email=%s',conn,params=[email,])
+            df=pd.read_sql('select * from v_user_lipstick where email=%s',conn,params=[email,])
         print("df : ",df)
         df['token']=token
         return df.to_dict(orient="records")[0]
@@ -25,14 +25,7 @@ def get_user(token: str):
 def get_chat(color: str):
     try:
         with connect() as conn:
-            df=pd.read_sql('''SELECT chat.chat_id, "user".name, chat.msg
-                                FROM "user"
-                                INNER JOIN chat ON "user".email = chat.email
-                                INNER JOIN lipstick ON "user".hex_code = lipstick.hex_code
-                                INNER JOIN color ON lipstick.color_id = color.color_id
-                                WHERE color.color_id = %s
-                                ORDER BY chat.time;
-        ''',conn,params=[color,])
+            df=pd.read_sql('select * from v_user_chat_lipstick where color_id=%s',conn,params=[color,])
         return to_response(df)
     except Exception as e:
         return to_response(str(e))
@@ -40,12 +33,17 @@ def get_chat(color: str):
 @chat.post("")
 def post_chat(chat:Chat=Form(...)):
     try:
+        email=JWT.decode(chat.token)
+        print("이메일 : ",email)
+
+        print("메시지 : ",chat.msg)
         with connect() as conn:
             cursor=conn.cursor()
-            cursor.execute("insert into chat(email,msg,color_id) values(%s,%s,%s)",vars=[JWT.decode(chat.token),chat.msg,chat.color_id])
+            cursor.execute("insert into chat(email,msg,color_id) values(%s,%s,%s)",vars=[email,chat.msg,chat.color_id])
             conn.commit()
         return 
     except Exception as e:
+        print("에러 : ",e)
         return to_response(str(e))
 
 @user.post("")

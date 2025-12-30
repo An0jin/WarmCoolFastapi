@@ -43,12 +43,12 @@ async def login(login:Login=Form(...)):
     try:
         with connect() as conn:
             login.email=login.email.lower()
-            df=pd.read_sql('select * from "user" left join lipstick on "user".hex_code =lipstick.hex_code where email=%s',conn,params=[login.email])
+            df=pd.read_sql('select * from  v_user_lipstick where email=%s',conn,params=[login.email])
             result=df.to_dict(orient="records")[0] if len(df)==1 else dict(zip(df.columns,[None]*len(df.columns)))
             result['msg']="성공"if  len(df)==1 else '이메일과 암호를 확인해주세요'
             result['token']=JWT.encode(login.email)if  len(df)==1 else None
             return result
-    except Exception as e:
+    except Exception as e:  
         return to_response(str(e))
 
 
@@ -74,7 +74,7 @@ def sync_processor(img_byte: bytes, token: str):
     
     with connect() as conn:
         df = pd.read_sql(
-            'SELECT c.color_id, l.hex_code, l.cname FROM lipstick l INNER JOIN color c ON l.color_id=c.color_id WHERE l.color_id=%s', 
+            'SELECT color_id, hex_code, cname FROM lipstick where color_id=%s', 
             conn, 
             params=(color_id,)
         )
@@ -135,9 +135,7 @@ async def predict_image(img: UploadFile=File(...), token: str = Form(None)):
 @app.get('/lipstick/{color}')
 async def lipstick(color:str):
     with connect() as conn:
-        print(f"명령어 : select hex_code,cname from lipstick where color_id=%s")
         df=pd.read_sql('select hex_code,cname from lipstick where color_id=%s',conn,params=[color,])
-        print(f"결과 : {to_response(df.to_dict(orient='records'))}")
     return to_response(df.to_dict(orient='records'))
 
 # ====================[ AI 챗봇 기능 ]====================
@@ -159,11 +157,9 @@ WHERE color_id = (
         response = lllm.invoke(llm.msg,colors)
         patten="#[A-Fa-f\d]{6}"
         color=re.findall(patten,response)[0]
-        if llm.token!=None:
-            cursor=conn.cursor()
-            cursor.execute('update "user" set hex_code=%s where email=%s',(color,email))
-            conn.commit()     
-        print(f"color : {color}")
+        cursor=conn.cursor()
+        cursor.execute('update "user" set hex_code=%s where email=%s',(color,email))
+        conn.commit()     
         result=pd.read_sql('SELECT hex_code,cname FROM lipstick WHERE hex_code = %s',conn,params=[color,])
         print(result.to_dict(orient="records"))
     return result.to_dict(orient="records")[0]
