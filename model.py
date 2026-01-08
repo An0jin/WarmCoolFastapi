@@ -9,6 +9,8 @@ class Chat(BaseModel):
 class LLM(BaseModel):
     token:str
     msg:str
+    sex:str
+    year:str
     
 class User(BaseModel):
     pw:str
@@ -17,8 +19,10 @@ class User(BaseModel):
     
 class Update(BaseModel):
     token:str
-    pw:str
-    name:str
+    pw:Optional[str]=None
+    name:Optional[str]=None
+    sex:str
+    year:int
 
 class Login(BaseModel):
     email:str

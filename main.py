@@ -43,7 +43,7 @@ async def login(login:Login=Form(...)):
     try:
         with connect() as conn:
             login.email=login.email.lower()
-            df=pd.read_sql('select email,name,pw,hex_code,color_id,cname from  v_user_lipstick where email=%s and pw=%s',conn,params=[login.email,hashpw(login.pw)])
+            df=pd.read_sql('select email,name,hex_code,color_id,cname,year,sex from  v_user_lipstick where email=%s and pw=%s',conn,params=[login.email,hashpw(login.pw)])
             result=df.to_dict(orient="records")[0] if len(df)==1 else dict(zip(df.columns,[None]*len(df.columns)))
             result['msg']="성공"if  len(df)==1 else '이메일과 암호를 확인해주세요'
             result['token']=JWT.encode(login.email)if  len(df)==1 else None

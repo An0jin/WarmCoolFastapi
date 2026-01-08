@@ -21,6 +21,7 @@ def get_user(token: str):
         return df.to_dict(orient="records")[0]
     except Exception as e:
         return to_response(str(e))
+
 @chat.get("/{color}")
 def get_chat(color: str):
     try:
@@ -94,8 +95,12 @@ def put_user(update:Update):
         with connect()as conn:
             cursor=conn.cursor()
             try:
-                cursor.execute('UPDATE "user" SET pw=%s, name=%s WHERE email=%s',
-                            (hashpw(update.pw), update.name,  JWT.decode(update.token)))
+                if update.pw:
+                    cursor.execute('UPDATE "user" SET pw=%s, name=%s, sex=%s, year=%s WHERE email=%s',
+                                (hashpw(update.pw), update.name, update.sex, update.year, JWT.decode(update.token)))
+                else:
+                    cursor.execute('UPDATE "user" SET sex=%s, year=%s WHERE email=%s',
+                                (update.name, update.sex, update.year, JWT.decode(update.token)))
                 conn.commit()
                 return to_response("수정 완료")
             except Exception as e:
