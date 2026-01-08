@@ -154,7 +154,7 @@ WHERE color_id = (
 )''',conn,params=[email,]).values))
         lllm=LipstickLLM()
         
-        response = lllm.invoke(llm.msg,colors)
+        response = lllm.invoke(llm.msg,colors,sex=llm.sex,year=llm.year)
         patten="#[A-Fa-f\d]{6}"
         color=re.findall(patten,response)[0]
         cursor=conn.cursor()

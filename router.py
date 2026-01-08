@@ -56,8 +56,8 @@ def post_user(user:User=Form(...)):
         with connect() as conn:
             cursor=conn.cursor()
             try:
-                var=user.email,hashpw(user.pw),user.name
-                cursor.execute('insert into "user"(email,pw,name) values (%s,%s,%s)',var)
+                var=user.email,hashpw(user.pw),user.name,user.sex,user.year
+                cursor.execute('insert into "user"(email,pw,name,sex,year) values (%s,%s,%s,%s,%s)',var)
                 conn.commit()
                 
                 SendEmail(user.email,'Toniverse에 오신 것을 환영합니다','''안녕하세요, Toniverse에 오신 것을 진심으로 환영합니다!
@@ -100,7 +100,7 @@ def put_user(update:Update):
                                 (hashpw(update.pw), update.name, update.sex, update.year, JWT.decode(update.token)))
                 else:
                     cursor.execute('UPDATE "user" SET sex=%s, year=%s WHERE email=%s',
-                                (update.name, update.sex, update.year, JWT.decode(update.token)))
+                                (update.sex, update.year, JWT.decode(update.token)))
                 conn.commit()
                 return to_response("수정 완료")
             except Exception as e:

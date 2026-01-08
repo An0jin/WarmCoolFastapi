@@ -54,7 +54,8 @@ class LipstickLLM:
         # Gemini API 키는 환경변수에서 로드
         self.client = genai.Client(api_key=os.getenv("gemini"))
 
-    def invoke(self, text, colors, age, sex):
+    def invoke(self, text, colors, year, sex):
+        age=datetime.datetime.now().year-year+1
         # 영어 시스템 지침 (한국어 답변 강제 포함)
         system_instruction = f"""
         You are a highly professional beauty consultant for the 'Toneiverse' app.

@@ -16,6 +16,8 @@ class User(BaseModel):
     pw:str
     name:str
     email:str
+    sex:str
+    year:int
     
 class Update(BaseModel):
     token:str
