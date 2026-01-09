@@ -1,6 +1,8 @@
 from fastapi import FastAPI, UploadFile, HTTPException, Request,Form,File
 from fastapi.responses import JSONResponse
 from PIL import Image
+import markdown
+from bs4 import BeautifulSoup
 from io import BytesIO
 from ultralytics import YOLO
 from fastapi.middleware.cors import CORSMiddleware
@@ -162,8 +164,9 @@ WHERE color_id = (
         conn.commit()     
         result=pd.read_sql('SELECT hex_code,cname FROM lipstick WHERE hex_code = %s',conn,params=[color,])
         result=result.to_dict(orient="records")[0]
-        result['result']=response
-        print(result)
+        result_text=markdown.markdown(response)
+        soup=BeautifulSoup(result_text,'html.parser')
+        result['result']=soup.get_text().replace(color,result['cname'])
     return result
 
 # ====================[ 버전 체크 기능]====================
