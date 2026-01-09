@@ -73,7 +73,7 @@ class LipstickLLM:
         """
 
         result = self.client.models.generate_content(
-            model="gemini-2.0-flash", # 최신 모델 권장
+            model="gemini-2.5-flash",
             contents=text,
             config={
                 "tools": [{"google_search": {}}], # 실시간 검색 도구 활성화

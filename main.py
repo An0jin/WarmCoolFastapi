@@ -161,8 +161,10 @@ WHERE color_id = (
         cursor.execute('update "user" set hex_code=%s where email=%s',(color,email))
         conn.commit()     
         result=pd.read_sql('SELECT hex_code,cname FROM lipstick WHERE hex_code = %s',conn,params=[color,])
-        print(result.to_dict(orient="records"))
-    return result.to_dict(orient="records")[0]
+        result=result.to_dict(orient="records")[0]
+        result['result']=response
+        print(result)
+    return result
 
 # ====================[ 버전 체크 기능]====================
 @app.get('/version/{version}')

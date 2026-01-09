@@ -10,7 +10,7 @@ class LLM(BaseModel):
     token:str
     msg:str
     sex:str
-    year:str
+    year:int
     
 class User(BaseModel):
     pw:str
