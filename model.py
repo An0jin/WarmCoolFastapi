@@ -6,7 +6,7 @@ class Chat(BaseModel):
     msg:str
     color_id:str
 
-class LLM(BaseModel):
+class Tllm(BaseModel):
     token:str
     msg:str
     sex:str

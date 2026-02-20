@@ -1,16 +1,22 @@
+from ultralytics import YOLO
 import hashlib
 import os
 import pandas as pd
 import psycopg2
 from dotenv import load_dotenv
+from PIL import Image
+import cv2
 load_dotenv()
+
+from abc import ABC, abstractmethod
 from jose import JWTError,jwt
+from fastapi import UploadFile
 from email.mime.text import MIMEText
 import smtplib
 from google import genai
 import datetime
-
-
+from io import BytesIO
+    
 def connect():
     """데이터베이스에 접근하는 함수"""
     return psycopg2.connect(host=os.getenv("host"),
@@ -46,12 +52,79 @@ class JWT:
             return jwt.decode(token, os.getenv("jwtSecret"), algorithms=['HS256'])['email']
         except:
             return None
-
 # tool.py 수정안
-class LipstickLLM:
+class LLM(ABC):
     def __init__(self):
-        # Gemini API 키는 환경변수에서 로드
         self.client = genai.Client(api_key=os.getenv("gemini"))
+    @abstractmethod
+    def invoke(self, *args, **kwargs):pass
+
+class CVLLM(LLM):
+    def __init__(self):
+        super().__init__()
+
+    async def invoke(self, color, images: UploadFile):
+        # 1. 모델 로드 (매번 로드하는 것은 비효율적이므로 외부로 빼는 것을 권장)
+        model = YOLO('lipstick.onnx')
+
+        # 2. 이미지 읽기 및 변환
+        img_byte = await images.read()
+        # PIL Image 객체 생성
+        img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
+        
+        # 3. 예측 (img_pil을 입력으로 사용)
+        results = model.predict(img_pil, iou=0.1, agnostic_nms=True, imgsz=640)
+        result = results[0]
+
+        # 비판적 수정: result.boxes의 길이를 체크해야 함
+        num_boxes = len(result.boxes)
+        if num_boxes == 0:
+            return "립스틱을 찾을 수 없습니다."
+        elif num_boxes > 1: # 2개 초과가 아니라 1개보다 많으면 경고하는 것이 논리적임
+            return "립스틱 하나만 찍힌 사진을 업로드해주세요."
+
+        # 4. Crop 처리 (PIL 이미지는 numpy 슬라이싱 방식이 다름)
+        tensor = result.boxes[0].xyxy[0]
+        x1, y1, x2, y2 = map(int, tensor)
+        
+        # PIL 이미지를 numpy 배열로 변환하여 OpenCV 인코딩 준비
+        img_np = np.array(img_pil)
+        # OpenCV는 BGR을 사용하므로 변환 필요
+        img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+        crop = img_bgr[y1:y2, x1:x2]
+
+        is_success, buffer = cv2.imencode(".jpg", crop)
+        if is_success:
+            final_image = BytesIO(buffer).getvalue()
+        else:
+            return "이미지 처리 중 오류가 발생했습니다."
+
+        # 5. Gemini 호출
+        response = self.client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                final_image, 
+                f"Analyze if this lipstick is suitable for someone with a '{color}' personal color. Provide a detailed professional opinion in Korean."
+            ],
+            config={
+                "tools": [{"google_search": {}}],
+                "system_instruction": """You are an expert beauty analyst specializing in color science and personal color theory. 
+    Your task is to analyze the provided product image (lipstick) and determine its suitability for a specific personal color type.
+
+    Guidelines:
+    1. Color Analysis: Extract the dominant hue, saturation, and value from the lipstick crop.
+    2. Harmony Evaluation: Compare the extracted color profile with the user's provided personal color type.
+    3. Logical Reasoning: Explain why the color matches or clashes, considering undertones (warm/cool) and clarity (clear/muted).
+    4. Professionalism: Maintain a sophisticated, helpful, and objective tone.
+    5. Language: Always provide the final response in Korean as per the user's primary language."""
+            }
+        )
+        return response.text
+
+
+class TextLLM(LLM):
+    def __init__(self):
+        super().__init__()
 
     def invoke(self, text, colors, year, sex):
         age=datetime.datetime.now().year-year+1

@@ -9,11 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from router import *
 import json
 import re
-from ultralytics import YOLO
-from tool import LipstickLLM,JWT,connect,to_response,hashpw, SendEmail
+from tool import JWT,connect,to_response,hashpw, SendEmail,TextLLM,CVLLM
 import os
 from dotenv import load_dotenv
-import asyncio
 from starlette.concurrency import run_in_threadpool
 load_dotenv()
 
@@ -30,7 +28,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
-model=YOLO('best.onnx')
 # ====================[ 테스트용 ]====================
 
 # @app.get('/')
@@ -61,9 +58,10 @@ def sync_processor(img_byte: bytes, token: str):
     이 함수는 전체가 스레드 풀에서 실행되므로 메인 이벤트 루프를 차단하지 않습니다.
     """
     
+    model=YOLO('pcolor.onnx')   
     # 1. 모델 추론 (CPU-bound)
     img_pil = Image.open(BytesIO(img_byte)).convert('RGB') 
-    results = model.predict(img_pil, iou=0.1, agnostic_nms=True,imgsz=512)
+    results = model.predict(img_pil, iou=0.1, agnostic_nms=True,imgsz=640)
     result_cls = results[0].boxes.cls
     print(f"결과 : {result_cls}")
     # 2. 예측 결과 로직 (동일)
@@ -142,7 +140,7 @@ async def lipstick(color:str):
 
 # ====================[ AI 챗봇 기능 ]====================
 @app.post('/llm')
-async def llm(llm:LLM=Form(None)):
+async def llm_text(llm:LLM=Form(None)):
     with connect() as conn:
         load_dotenv()
         email=JWT.decode(llm.token)
@@ -154,7 +152,7 @@ WHERE color_id = (
     INNER JOIN lipstick AS T1 ON T0.hex_code = T1.hex_code 
     WHERE T0.email = %s
 )''',conn,params=[email,]).values))
-        lllm=LipstickLLM()
+        lllm=TextLLM()
         
         response = lllm.invoke(llm.msg,colors,sex=llm.sex,year=llm.year)
         patten="#[A-Fa-f\d]{6}"
@@ -167,6 +165,16 @@ WHERE color_id = (
         result_text=markdown.markdown(response.replace(color,result['cname']))
         soup=BeautifulSoup(result_text,'html.parser')
         result['result']=soup.get_text()
+    return result
+@app.post('/cvllm')
+async def llm_cv(img:UploadFile=File(...),color:str=Form(...)):
+    with connect() as conn:
+        load_dotenv()
+        lllm=CVLLM()
+        response = lllm.invoke(color,img)
+        result_text=markdown.markdown(response)
+        soup=BeautifulSoup(result_text,'html.parser')
+        result={"result":soup.get_text()}
     return result
 
 # ====================[ 버전 체크 기능]====================
@@ -195,6 +203,83 @@ async def get_Pw(email:Email=Form(...)):
 async def getNum(email:str=Form(...),num:str=Form(...)):
     SendEmail(email,'Toniverse 인증번호',f"인증번호 : {num}")
     return to_response("메일을 확인해주세요")
+
+# ====================[ 예측 기능 ]====================
+def lipstick_processor(img_byte: bytes, color_id: str):
+    """
+    CPU-bound(predict)와 I/O-bound(DB access)를 모두 처리하는 동기 함수.
+    이 함수는 전체가 스레드 풀에서 실행되므로 메인 이벤트 루프를 차단하지 않습니다.
+    """
+    
+    # 1. 모델 추론 (CPU-bound)
+    img_pil = Image.open(BytesIO(img_byte)).convert('RGB') 
+    results = model.predict(img_pil, iou=0.1, agnostic_nms=True,imgsz=512)
+    result = results[0]
+    print(f"결과 : {result}")
+    # 2. 예측 결과 로직 (동일)
+    if len(result.boxes) > 1:
+        return to_response("립스틱 한개만 진단합니다")
+    elif len(result.boxes) == 0:
+        return to_response("립스틱을 찾을 수 없습니다")
+    
+    color_id=result.names[result.boxes.cls[0].item()]
+    
+    with connect() as conn:
+        df = pd.read_sql(
+            'SELECT color_id, hex_code, cname FROM lipstick where color_id=%s', 
+            conn, 
+            params=(color_id,)
+        )
+
+        # DataFrame을 JSON 문자열로 변환 후 파싱
+        df_json = df.to_json(orient="records")
+        response = json.loads(df_json)[0]
+
+        try:
+            email = JWT.decode(token)
+            if not email:
+                print("WARN: JWT 디코딩 성공, 그러나 이메일 정보 없음")
+            else:
+                cursor = conn.cursor()
+                cursor.execute(
+                    'UPDATE "user" SET hex_code=%s WHERE email=%s', 
+                    (response['hex_code'], email)
+                )
+                conn.commit()
+        except jwt.InvalidTokenError:
+            print("WARN: 유효하지 않은 토큰입니다. DB 업데이트 생략.")
+        except Exception as e:
+            print(f"ERROR: DB 업데이트 중 예외 발생: {e}")
+
+    return response
+
+
+@app.post('/predict')
+async def lipstick_predict(img: UploadFile=File(...), color_id: str = Form(None)):
+    
+    print("예측중")
+    
+    # 1. 비동기로 파일 읽기 (유일한 async I/O)
+    try:
+        img_byte = await img.read()
+    except Exception:
+        raise HTTPException(status_code=400, detail="이미지 파일을 읽을 수 없습니다.")
+
+    # 2. CPU-bound 및 동기 I/O (Pandas/DB) 작업을 스레드 풀에서 실행
+    # blocking 코드를 run_in_threadpool로 감싸 이벤트 루프 차단을 방지함
+    try:
+        result = await run_in_threadpool(lipstick_processor, img_byte, color_id)
+    except ValueError as e:
+         raise HTTPException(status_code=404, detail=str(e))
+    except NotImplementedError:
+        raise HTTPException(status_code=500, detail="서버 설정 오류: DB 연결 함수가 정의되지 않았습니다.")
+    except Exception as e:
+         # 다른 모든 예외를 500 에러로 처리
+         print(f"Critical Error in sync_processor: {e}")
+         raise HTTPException(status_code=500, detail="내부 서버 오류가 발생했습니다.")
+    
+    # 3. 최종 응답
+    return result
 
 
 # ====================[ 예외 처리 ]====================
