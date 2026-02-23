@@ -1,3 +1,4 @@
+from google.genai import types
 from ultralytics import YOLO
 import hashlib
 import os
@@ -5,9 +6,12 @@ import pandas as pd
 import psycopg2
 from dotenv import load_dotenv
 from PIL import Image
+import markdown
+import numpy as np
+from bs4 import BeautifulSoup
 import cv2
 load_dotenv()
-
+from starlette.concurrency import run_in_threadpool
 from abc import ABC, abstractmethod
 from jose import JWTError,jwt
 from fastapi import UploadFile
@@ -52,44 +56,35 @@ class JWT:
             return jwt.decode(token, os.getenv("jwtSecret"), algorithms=['HS256'])['email']
         except:
             return None
-# tool.py 수정안
 class LLM(ABC):
     def __init__(self):
         self.client = genai.Client(api_key=os.getenv("gemini"))
     @abstractmethod
     def invoke(self, *args, **kwargs):pass
+    def rm_markdown(self,text):
+        result_text=markdown.markdown(text)
+        soup=BeautifulSoup(result_text,'html.parser')
+        return soup.get_text()
 
 class CVLLM(LLM):
     def __init__(self):
+        self.model = YOLO('lipstick.onnx')
         super().__init__()
-
-    async def invoke(self, color, images: UploadFile):
-        # 1. 모델 로드 (매번 로드하는 것은 비효율적이므로 외부로 빼는 것을 권장)
-        model = YOLO('lipstick.onnx')
-
-        # 2. 이미지 읽기 및 변환
-        img_byte = await images.read()
-        # PIL Image 객체 생성
+    def cv_processor(self,img_byte: bytes, color_id: str):
         img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
-        
-        # 3. 예측 (img_pil을 입력으로 사용)
-        results = model.predict(img_pil, iou=0.1, agnostic_nms=True, imgsz=640)
+        results = self.model.predict(img_pil, iou=0.1, agnostic_nms=True, imgsz=640)
         result = results[0]
-
-        # 비판적 수정: result.boxes의 길이를 체크해야 함
+        result.show()
         num_boxes = len(result.boxes)
         if num_boxes == 0:
             return "립스틱을 찾을 수 없습니다."
-        elif num_boxes > 1: # 2개 초과가 아니라 1개보다 많으면 경고하는 것이 논리적임
+        elif num_boxes > 1: 
             return "립스틱 하나만 찍힌 사진을 업로드해주세요."
 
-        # 4. Crop 처리 (PIL 이미지는 numpy 슬라이싱 방식이 다름)
         tensor = result.boxes[0].xyxy[0]
         x1, y1, x2, y2 = map(int, tensor)
         
-        # PIL 이미지를 numpy 배열로 변환하여 OpenCV 인코딩 준비
         img_np = np.array(img_pil)
-        # OpenCV는 BGR을 사용하므로 변환 필요
         img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
         crop = img_bgr[y1:y2, x1:x2]
 
@@ -103,8 +98,11 @@ class CVLLM(LLM):
         response = self.client.models.generate_content(
             model="gemini-2.5-flash",
             contents=[
-                final_image, 
-                f"Analyze if this lipstick is suitable for someone with a '{color}' personal color. Provide a detailed professional opinion in Korean."
+                types.Part.from_bytes(
+                    data=final_image,
+                    mime_type='image/jpeg',
+                ),
+                f"Analyze if this lipstick is suitable for someone with a '{color_id}' personal color. Provide a detailed professional opinion in Korean."
             ],
             config={
                 "tools": [{"google_search": {}}],
@@ -119,7 +117,16 @@ class CVLLM(LLM):
     5. Language: Always provide the final response in Korean as per the user's primary language."""
             }
         )
-        return response.text
+        result=self.rm_markdown(response.text)
+        print(f"result is {result}")
+        return result
+
+
+
+    async def invoke(self, color_id, images: UploadFile):
+        img_byte = await images.read()
+        result = await run_in_threadpool(self.cv_processor, img_byte, color_id)
+        return result
 
 
 class TextLLM(LLM):
@@ -152,7 +159,7 @@ class TextLLM(LLM):
                 "system_instruction": system_instruction
             }
         )
-        return result.text
+        return self.rm_markdown(result.text)
 
 def SendEmail(email,subject,body):
     my_email = "an0jin0106@gmail.com"

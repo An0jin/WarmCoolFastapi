@@ -1,8 +1,6 @@
 from fastapi import FastAPI, UploadFile, HTTPException, Request,Form,File
 from fastapi.responses import JSONResponse
 from PIL import Image
-import markdown
-from bs4 import BeautifulSoup
 from io import BytesIO
 from ultralytics import YOLO
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,9 +58,11 @@ def sync_processor(img_byte: bytes, token: str):
     
     model=YOLO('pcolor.onnx')   
     # 1. 모델 추론 (CPU-bound)
-    img_pil = Image.open(BytesIO(img_byte)).convert('RGB') 
+    img_pil = Image.open(BytesIO(img_byte)).convert('RGB')
+    print("이미지 불러오기 완료") 
     results = model.predict(img_pil, iou=0.1, agnostic_nms=True,imgsz=640)
     result_cls = results[0].boxes.cls
+    # results[0].show()
     print(f"결과 : {result_cls}")
     # 2. 예측 결과 로직 (동일)
     if len(result_cls) > 1:
@@ -140,7 +140,7 @@ async def lipstick(color:str):
 
 # ====================[ AI 챗봇 기능 ]====================
 @app.post('/llm')
-async def llm_text(llm:LLM=Form(None)):
+async def llm_text(llm:Tllm=Form(None)):
     with connect() as conn:
         load_dotenv()
         email=JWT.decode(llm.token)
@@ -155,26 +155,23 @@ WHERE color_id = (
         lllm=TextLLM()
         
         response = lllm.invoke(llm.msg,colors,sex=llm.sex,year=llm.year)
-        patten="#[A-Fa-f\d]{6}"
+        patten=r"#[A-Fa-f\d]{6}"
         color=re.findall(patten,response)[0]
         cursor=conn.cursor()
         cursor.execute('update "user" set hex_code=%s where email=%s',(color,email))
         conn.commit()     
         result=pd.read_sql('SELECT hex_code,cname FROM lipstick WHERE hex_code = %s',conn,params=[color,])
         result=result.to_dict(orient="records")[0]
-        result_text=markdown.markdown(response.replace(color,result['cname']))
-        soup=BeautifulSoup(result_text,'html.parser')
-        result['result']=soup.get_text()
+        result['result']=lllm.rm_markdown(response.replace(color,result['cname']))
     return result
 @app.post('/cvllm')
-async def llm_cv(img:UploadFile=File(...),color:str=Form(...)):
+async def llm_cv(img:UploadFile=File(...),color_id:str=Form(...)):
     with connect() as conn:
         load_dotenv()
         lllm=CVLLM()
-        response = lllm.invoke(color,img)
-        result_text=markdown.markdown(response)
-        soup=BeautifulSoup(result_text,'html.parser')
-        result={"result":soup.get_text()}
+        response =await lllm.invoke(color_id,img)
+        print(f"response is {response}")
+        result={"result":response}
     return result
 
 # ====================[ 버전 체크 기능]====================
